@@ -32,6 +32,8 @@ security:
             pattern: ^/api
             stateless: true
             jwt: ~
+            custom_authenticators:
+                - App\Security\GoogleAuthenticator
 
         main:
             lazy: true

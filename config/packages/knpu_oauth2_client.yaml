@@ -1,0 +1,14 @@
+knpu_oauth2_client:
+    clients:
+        # the key "google" can be anything, it will be the "type"
+        google:
+            # must be "google" to use the Google provider
+            type: google
+            # add and configure client_id and client_secret in .env
+            client_id: '%env(GOOGLE_CLIENT_ID)%'
+            client_secret: '%env(GOOGLE_CLIENT_SECRET)%'
+            # a route name you'll create in the next step
+            redirect_route: connect_google_check
+            # optional: any other options available in the "league" google provider
+            # list of scopes: https://developers.google.com/identity/protocols/googlescopes
+            # scopes: ['email', 'profile']
