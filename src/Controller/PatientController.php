@@ -5,7 +5,9 @@ namespace App\Controller;
 use App\Dto\PatientCreateDTO;
 use App\Dto\PatientUpdateDTO;
 use App\Entity\Patient;
+use App\Entity\ClinicalHistory;
 use App\Mapper\PatientMapper;
+use App\Mapper\ClinicalHistoryMapper;
 use App\Repository\PatientRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -23,6 +25,7 @@ class PatientController extends AbstractController
     public function __construct(
         private PatientRepository $patientRepository,
         private PatientMapper $patientMapper,
+        private ClinicalHistoryMapper $clinicalHistoryMapper,
         private EntityManagerInterface $entityManager
     ) {}
 
@@ -50,6 +53,19 @@ class PatientController extends AbstractController
     {
         return $this->json($this->patientMapper->toResponseDto($patient));
     }
+
+    #[Route('/{id}/history', name: 'app_patient_history_list', methods: ['GET'])]
+    public function history(Patient $patient): JsonResponse
+    {
+        $histories = $patient->getClinicalHistories();
+        $responseDtos = array_map(
+            fn(ClinicalHistory $history) => $this->clinicalHistoryMapper->toResponseDto($history),
+            $histories->toArray()
+        );
+
+        return $this->json($responseDtos);
+    }
+
 
     #[Route('', name: 'app_patient_create', methods: ['POST'])]
     public function create(#[MapRequestPayload] PatientCreateDTO $patientCreateDTO): JsonResponse
