@@ -60,10 +60,18 @@ class Patient
     #[ORM\OneToMany(mappedBy: 'patient', targetEntity: ClinicalHistory::class, orphanRemoval: true)]
     private Collection $clinicalHistories;
 
+    /**
+     * @var Collection<int, PrimeraVisita>
+     */
+    #[ORM\OneToMany(mappedBy: 'patient', targetEntity: PrimeraVisita::class, orphanRemoval: true)]
+    private Collection $primerasVisitas;
+
     public function __construct()
     {
         $this->clinicalHistories = new ArrayCollection();
+        $this->primerasVisitas = new ArrayCollection();
     }
+
 
 
 
@@ -216,6 +224,36 @@ class Patient
             // set the owning side to null (unless already changed)
             if ($clinicalHistory->getPatient() === $this) {
                 $clinicalHistory->setPatient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PrimeraVisita>
+     */
+    public function getPrimerasVisitas(): Collection
+    {
+        return $this->primerasVisitas;
+    }
+
+    public function addPrimeraVisita(PrimeraVisita $primeraVisita): static
+    {
+        if (!$this->primerasVisitas->contains($primeraVisita)) {
+            $this->primerasVisitas->add($primeraVisita);
+            $primeraVisita->setPatient($this);
+        }
+
+        return $this;
+    }
+
+    public function removePrimeraVisita(PrimeraVisita $primeraVisita): static
+    {
+        if ($this->primerasVisitas->removeElement($primeraVisita)) {
+            // set the owning side to null (unless already changed)
+            if ($primeraVisita->getPatient() === $this) {
+                $primeraVisita->setPatient(null);
             }
         }
 
