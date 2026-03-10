@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\PatientRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -51,6 +53,19 @@ class Patient
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $datos_facturacion = null;
+
+    /**
+     * @var Collection<int, ClinicalHistory>
+     */
+    #[ORM\OneToMany(mappedBy: 'patient', targetEntity: ClinicalHistory::class, orphanRemoval: true)]
+    private Collection $clinicalHistories;
+
+    public function __construct()
+    {
+        $this->clinicalHistories = new ArrayCollection();
+    }
+
+
 
     public function getId(): ?int
     {
@@ -173,6 +188,36 @@ class Patient
     public function setDatosFacturacion(?string $datos_facturacion): static
     {
         $this->datos_facturacion = $datos_facturacion;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ClinicalHistory>
+     */
+    public function getClinicalHistories(): Collection
+    {
+        return $this->clinicalHistories;
+    }
+
+    public function addClinicalHistory(ClinicalHistory $clinicalHistory): static
+    {
+        if (!$this->clinicalHistories->contains($clinicalHistory)) {
+            $this->clinicalHistories->add($clinicalHistory);
+            $clinicalHistory->setPatient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeClinicalHistory(ClinicalHistory $clinicalHistory): static
+    {
+        if ($this->clinicalHistories->removeElement($clinicalHistory)) {
+            // set the owning side to null (unless already changed)
+            if ($clinicalHistory->getPatient() === $this) {
+                $clinicalHistory->setPatient(null);
+            }
+        }
 
         return $this;
     }
