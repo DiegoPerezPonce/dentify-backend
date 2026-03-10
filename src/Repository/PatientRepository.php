@@ -16,5 +16,18 @@ class PatientRepository extends ServiceEntityRepository
         parent::__construct($registry, Patient::class);
     }
 
-    // Add custom repository methods here if needed
+    /**
+     * @return Patient[]
+     */
+    public function findBySearchTerm(string $term): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.dni LIKE :term')
+            ->orWhere('p.nombre LIKE :term')
+            ->orWhere('p.apellidos LIKE :term')
+            ->orWhere('p.email LIKE :term')
+            ->setParameter('term', '%' . $term . '%')
+            ->getQuery()
+            ->getResult();
+    }
 }
