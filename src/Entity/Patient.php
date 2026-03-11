@@ -72,11 +72,18 @@ class Patient
     #[ORM\OneToMany(mappedBy: 'patient', targetEntity: Odontograma::class, orphanRemoval: true)]
     private Collection $odontogramas;
 
+    /**
+     * @var Collection<int, Radiografia>
+     */
+    #[ORM\OneToMany(mappedBy: 'patient', targetEntity: Radiografia::class, orphanRemoval: true)]
+    private Collection $radiografias;
+
     public function __construct()
     {
         $this->clinicalHistories = new ArrayCollection();
         $this->primerasVisitas = new ArrayCollection();
         $this->odontogramas = new ArrayCollection();
+        $this->radiografias = new ArrayCollection();
     }
 
 
@@ -291,6 +298,36 @@ class Patient
             // set the owning side to null (unless already changed)
             if ($odontograma->getPatient() === $this) {
                 $odontograma->setPatient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Radiografia>
+     */
+    public function getRadiografias(): Collection
+    {
+        return $this->radiografias;
+    }
+
+    public function addRadiografia(Radiografia $radiografia): static
+    {
+        if (!$this->radiografias->contains($radiografia)) {
+            $this->radiografias->add($radiografia);
+            $radiografia->setPatient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeRadiografia(Radiografia $radiografia): static
+    {
+        if ($this->radiografias->removeElement($radiografia)) {
+            // set the owning side to null (unless already changed)
+            if ($radiografia->getPatient() === $this) {
+                $radiografia->setPatient(null);
             }
         }
 
