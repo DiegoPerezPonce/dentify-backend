@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\OdontogramaRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -28,6 +30,17 @@ class Odontograma
 
     #[ORM\Column]
     private ?\DateTimeImmutable $fecha_modificacion = null;
+
+    /**
+     * @var Collection<int, Patologia>
+     */
+    #[ORM\OneToMany(mappedBy: 'odontograma', targetEntity: Patologia::class, orphanRemoval: true)]
+    private Collection $patologias;
+
+    public function __construct()
+    {
+        $this->patologias = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -93,5 +106,35 @@ class Odontograma
     public function setFechaModificacionValue(): void
     {
         $this->fecha_modificacion = new \DateTimeImmutable();
+    }
+
+    /**
+     * @return Collection<int, Patologia>
+     */
+    public function getPatologias(): Collection
+    {
+        return $this->patologias;
+    }
+
+    public function addPatologia(Patologia $patologia): static
+    {
+        if (!$this->patologias->contains($patologia)) {
+            $this->patologias->add($patologia);
+            $patologia->setOdontograma($this);
+        }
+
+        return $this;
+    }
+
+    public function removePatologia(Patologia $patologia): static
+    {
+        if ($this->patologias->removeElement($patologia)) {
+            // set the owning side to null (unless already changed)
+            if ($patologia->getOdontograma() === $this) {
+                $patologia->setOdontograma(null);
+            }
+        }
+
+        return $this;
     }
 }
