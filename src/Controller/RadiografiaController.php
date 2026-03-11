@@ -3,9 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\Patient;
-use App\Entity\Radiografia;
+use App\Mapper\RadiografiaMapper;
+use App\Repository\RadiografiaRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,7 +23,9 @@ class RadiografiaController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private SluggerInterface $slugger
+        private SluggerInterface $slugger,
+        private RadiografiaMapper $radiografiaMapper,
+        private Filesystem $filesystem
     ) {}
 
     #[Route('/upload', name: 'app_radiografias_upload', methods: ['POST'])]
@@ -87,5 +91,70 @@ class RadiografiaController extends AbstractController
         $this->entityManager->flush();
 
         return $this->json(['message' => 'Files uploaded successfully', 'data' => $uploadedData], Response::HTTP_CREATED);
+    }
+
+    #[Route('/{id}', name: 'app_radiografias_delete', methods: ['DELETE'])]
+    public function delete(Radiografia $radiografia): JsonResponse
+    {
+        $projectDir = $this->getParameter('kernel.project_dir');
+        $filePath = $projectDir . '/public' . $radiografia->getRutaArchivo();
+
+        if ($this->filesystem->exists($filePath)) {
+            $this->filesystem->remove($filePath);
+        }
+
+        $this->entityManager->remove($radiografia);
+        $this->entityManager->flush();
+
+        return $this->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/{id}/replace', name: 'app_radiografias_replace', methods: ['POST', 'PUT'])]
+    public function replace(Radiografia $radiografia, Request $request): JsonResponse
+    {
+        /** @var UploadedFile $file */
+        $file = $request->files->get('file');
+
+        if (!$file) {
+            return $this->json(['error' => 'No file uploaded'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+        if (!in_array($file->getClientMimeType(), $allowedMimeTypes)) {
+            return $this->json([
+                'error' => sprintf('Invalid file type. Allowed: %s', implode(', ', $allowedMimeTypes))
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Delete old file
+        $projectDir = $this->getParameter('kernel.project_dir');
+        $oldFilePath = $projectDir . '/public' . $radiografia->getRutaArchivo();
+        if ($this->filesystem->exists($oldFilePath)) {
+            $this->filesystem->remove($oldFilePath);
+        }
+
+        // Upload new file
+        $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $safeFilename = $this->slugger->slug($originalFilename);
+        $newFilename = $safeFilename.'-'.uniqid().'.'.$file->guessExtension();
+
+        try {
+            $file->move(
+                $projectDir.'/public/uploads/radiografias',
+                $newFilename
+            );
+        } catch (FileException $e) {
+            return $this->json(['error' => 'Failed to upload new file'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        // Update entity
+        $radiografia->setNombreArchivo($file->getClientOriginalName());
+        $radiografia->setRutaArchivo('/uploads/radiografias/'.$newFilename);
+        $radiografia->setTipoMime($file->getClientMimeType());
+        $radiografia->setFechaSubida(new \DateTimeImmutable());
+
+        $this->entityManager->flush();
+
+        return $this->json($this->radiografiaMapper->toResponseDto($radiografia));
     }
 }
