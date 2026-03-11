@@ -9,6 +9,7 @@ use App\Entity\ClinicalHistory;
 use App\Mapper\PatientMapper;
 use App\Mapper\ClinicalHistoryMapper;
 use App\Mapper\OdontogramaMapper;
+use App\Mapper\RadiografiaMapper;
 use App\Repository\PatientRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,6 +29,7 @@ class PatientController extends AbstractController
         private PatientMapper $patientMapper,
         private ClinicalHistoryMapper $clinicalHistoryMapper,
         private OdontogramaMapper $odontogramaMapper,
+        private RadiografiaMapper $radiografiaMapper,
         private EntityManagerInterface $entityManager
     ) {}
 
@@ -75,6 +77,18 @@ class PatientController extends AbstractController
         $responseDtos = array_map(
             fn(\App\Entity\Odontograma $odontograma) => $this->odontogramaMapper->toResponseDto($odontograma),
             $odontogramas->toArray()
+        );
+
+        return $this->json($responseDtos);
+    }
+
+    #[Route('/{id}/radiografias', name: 'app_patient_radiografias_list', methods: ['GET'])]
+    public function radiografias(Patient $patient): JsonResponse
+    {
+        $radiografias = $patient->getRadiografias();
+        $responseDtos = array_map(
+            fn(\App\Entity\Radiografia $radiografia) => $this->radiografiaMapper->toResponseDto($radiografia),
+            $radiografias->toArray()
         );
 
         return $this->json($responseDtos);
