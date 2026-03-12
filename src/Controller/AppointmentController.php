@@ -59,6 +59,46 @@ class AppointmentController extends AbstractController
     {
         $appointment = $this->appointmentMapper->toEntity($appointmentCreateDTO);
         
+        // 1. Check Box status
+        if ($appointment->getBox()->getEstado() !== 'disponible') {
+            return $this->json([
+                'error' => 'Conflict',
+                'message' => 'The selected box is currently ' . $appointment->getBox()->getEstado() . ' and cannot be used.'
+            ], Response::HTTP_CONFLICT);
+        }
+
+        // 2. Check for overlaps for Dentist
+        $dentistOverlaps = $this->appointmentRepository->findOverlaps(
+            $appointment->getOdontologo(),
+            null,
+            $appointment->getFecha(),
+            $appointment->getHoraInicio(),
+            $appointment->getDuracion()
+        );
+
+        if (!empty($dentistOverlaps)) {
+            return $this->json([
+                'error' => 'Conflict',
+                'message' => 'The dentist is already occupied during this time range.'
+            ], Response::HTTP_CONFLICT);
+        }
+
+        // 3. Check for overlaps for Box
+        $boxOverlaps = $this->appointmentRepository->findOverlaps(
+            null,
+            $appointment->getBox(),
+            $appointment->getFecha(),
+            $appointment->getHoraInicio(),
+            $appointment->getDuracion()
+        );
+
+        if (!empty($boxOverlaps)) {
+            return $this->json([
+                'error' => 'Conflict',
+                'message' => 'The box is already occupied during this time range.'
+            ], Response::HTTP_CONFLICT);
+        }
+
         $this->entityManager->persist($appointment);
         $this->entityManager->flush();
 
@@ -71,8 +111,51 @@ class AppointmentController extends AbstractController
     #[Route('/{id}', name: 'app_appointment_update', methods: ['PUT', 'PATCH'])]
     public function update(Appointment $appointment, #[MapRequestPayload] AppointmentUpdateDTO $appointmentUpdateDTO): JsonResponse
     {
-        $appointment = $this->appointmentMapper->updateEntity($appointment, $appointmentUpdateDTO);
+        $updatedAppointment = $this->appointmentMapper->updateEntity(clone $appointment, $appointmentUpdateDTO);
         
+        // 1. Check Box status if changed
+        if ($updatedAppointment->getBox() !== $appointment->getBox() && $updatedAppointment->getBox()->getEstado() !== 'disponible') {
+            return $this->json([
+                'error' => 'Conflict',
+                'message' => 'The selected box is currently ' . $updatedAppointment->getBox()->getEstado() . ' and cannot be used.'
+            ], Response::HTTP_CONFLICT);
+        }
+
+        // 2. Check for overlaps for Dentist
+        $dentistOverlaps = $this->appointmentRepository->findOverlaps(
+            $updatedAppointment->getOdontologo(),
+            null,
+            $updatedAppointment->getFecha(),
+            $updatedAppointment->getHoraInicio(),
+            $updatedAppointment->getDuracion(),
+            $appointment->getId()
+        );
+
+        if (!empty($dentistOverlaps)) {
+            return $this->json([
+                'error' => 'Conflict',
+                'message' => 'The dentist is already occupied during this time range.'
+            ], Response::HTTP_CONFLICT);
+        }
+
+        // 3. Check for overlaps for Box
+        $boxOverlaps = $this->appointmentRepository->findOverlaps(
+            null,
+            $updatedAppointment->getBox(),
+            $updatedAppointment->getFecha(),
+            $updatedAppointment->getHoraInicio(),
+            $updatedAppointment->getDuracion(),
+            $appointment->getId()
+        );
+
+        if (!empty($boxOverlaps)) {
+            return $this->json([
+                'error' => 'Conflict',
+                'message' => 'The box is already occupied during this time range.'
+            ], Response::HTTP_CONFLICT);
+        }
+
+        $this->appointmentMapper->updateEntity($appointment, $appointmentUpdateDTO);
         $this->entityManager->flush();
 
         return $this->json($this->appointmentMapper->toResponseDto($appointment));
