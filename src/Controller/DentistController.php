@@ -2,11 +2,14 @@
 
 namespace App\Controller;
 
+use App\Dto\AssignBoxDTO;
 use App\Dto\DentistCreateDTO;
 use App\Dto\DentistUpdateDTO;
 use App\Entity\Dentist;
+use App\Entity\Box;
 use App\Mapper\DentistMapper;
 use App\Repository\DentistRepository;
+use App\Repository\BoxRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,6 +25,7 @@ class DentistController extends AbstractController
     public function __construct(
         private DentistRepository $dentistRepository,
         private DentistMapper $dentistMapper,
+        private BoxRepository $boxRepository,
         private EntityManagerInterface $entityManager
     ) {}
 
@@ -75,5 +79,20 @@ class DentistController extends AbstractController
         $this->entityManager->flush();
 
         return $this->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/{id}/assign-box', name: 'app_dentist_assign_box', methods: ['PUT'])]
+    public function assignBox(Dentist $dentist, #[MapRequestPayload] AssignBoxDTO $assignBoxDTO): JsonResponse
+    {
+        $box = $this->boxRepository->find($assignBoxDTO->boxId);
+
+        if (!$box) {
+            return $this->json(['error' => 'Box not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $dentist->addBox($box);
+        $this->entityManager->flush();
+
+        return $this->json($this->dentistMapper->toResponseDto($dentist));
     }
 }

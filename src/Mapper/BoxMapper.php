@@ -41,6 +41,8 @@ class BoxMapper
         $dto->nombre = $box->getNombre();
         $dto->descripcion = $box->getDescripcion();
         $dto->estado = $box->getEstado();
+        $dto->dentistId = $box->getDentist()?->getId();
+        $dto->dentistNombre = $box->getDentist() ? $box->getDentist()->getNombre() . ' ' . $box->getDentist()->getApellidos() : null;
 
         return $dto;
     }
