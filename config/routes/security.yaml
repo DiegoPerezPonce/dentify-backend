@@ -1,3 +1,11 @@
+# config/routes/security.yaml
+
+# Logout (opcional si no lo usas)
 _security_logout:
     resource: security.route_loader.logout
     type: service
+
+# Login check para JsonLoginAuthenticator
+api_login_check:
+    path: /api/login_check
+    methods: [POST]
