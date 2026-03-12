@@ -6,6 +6,7 @@ use App\Dto\DentistCreateDTO;
 use App\Dto\DentistResponseDTO;
 use App\Dto\DentistUpdateDTO;
 use App\Entity\Dentist;
+use App\Entity\Box;
 
 class DentistMapper
 {

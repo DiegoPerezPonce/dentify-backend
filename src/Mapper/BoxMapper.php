@@ -6,6 +6,7 @@ use App\Dto\BoxCreateDTO;
 use App\Dto\BoxResponseDTO;
 use App\Dto\BoxUpdateDTO;
 use App\Entity\Box;
+use App\Entity\Dentist;
 
 class BoxMapper
 {
