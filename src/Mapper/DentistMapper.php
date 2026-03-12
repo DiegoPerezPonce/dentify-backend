@@ -46,6 +46,7 @@ class DentistMapper
         $dto->apellidos = $dentist->getApellidos();
         $dto->especialidad = $dentist->getEspecialidad();
         $dto->email = $dentist->getEmail();
+        $dto->boxes = $dentist->getBoxes()->map(fn(Box $box) => $box->getNombre())->toArray();
 
         return $dto;
     }

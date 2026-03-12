@@ -8,4 +8,6 @@ class BoxResponseDTO
     public ?string $nombre = null;
     public ?string $descripcion = null;
     public ?string $estado = null;
+    public ?int $dentistId = null;
+    public ?string $dentistNombre = null;
 }

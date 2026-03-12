@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\DentistRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -31,6 +33,17 @@ class Dentist
     #[Assert\NotBlank]
     #[Assert\Email]
     private ?string $email = null;
+
+    /**
+     * @var Collection<int, Box>
+     */
+    #[ORM\OneToMany(mappedBy: 'dentist', targetEntity: Box::class)]
+    private Collection $boxes;
+
+    public function __construct()
+    {
+        $this->boxes = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -81,6 +94,36 @@ class Dentist
     public function setEmail(string $email): static
     {
         $this->email = $email;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Box>
+     */
+    public function getBoxes(): Collection
+    {
+        return $this->boxes;
+    }
+
+    public function addBox(Box $box): static
+    {
+        if (!$this->boxes->contains($box)) {
+            $this->boxes->add($box);
+            $box->setDentist($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBox(Box $box): static
+    {
+        if ($this->boxes->removeElement($box)) {
+            // set the owning side to null (unless already changed)
+            if ($box->getDentist() === $this) {
+                $box->setDentist(null);
+            }
+        }
 
         return $this;
     }
