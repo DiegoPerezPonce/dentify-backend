@@ -78,12 +78,19 @@ class Patient
     #[ORM\OneToMany(mappedBy: 'patient', targetEntity: Radiografia::class, orphanRemoval: true)]
     private Collection $radiografias;
 
+    /**
+     * @var Collection<int, Appointment>
+     */
+    #[ORM\OneToMany(mappedBy: 'paciente', targetEntity: Appointment::class, orphanRemoval: true)]
+    private Collection $appointments;
+
     public function __construct()
     {
         $this->clinicalHistories = new ArrayCollection();
         $this->primerasVisitas = new ArrayCollection();
         $this->odontogramas = new ArrayCollection();
         $this->radiografias = new ArrayCollection();
+        $this->appointments = new ArrayCollection();
     }
 
 
@@ -328,6 +335,36 @@ class Patient
             // set the owning side to null (unless already changed)
             if ($radiografia->getPatient() === $this) {
                 $radiografia->setPatient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Appointment>
+     */
+    public function getAppointments(): Collection
+    {
+        return $this->appointments;
+    }
+
+    public function addAppointment(Appointment $appointment): static
+    {
+        if (!$this->appointments->contains($appointment)) {
+            $this->appointments->add($appointment);
+            $appointment->setPaciente($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAppointment(Appointment $appointment): static
+    {
+        if ($this->appointments->removeElement($appointment)) {
+            // set the owning side to null (unless already changed)
+            if ($appointment->getPaciente() === $this) {
+                $appointment->setPaciente(null);
             }
         }
 
