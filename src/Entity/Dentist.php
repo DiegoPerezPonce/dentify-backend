@@ -40,9 +40,16 @@ class Dentist
     #[ORM\OneToMany(mappedBy: 'dentist', targetEntity: Box::class)]
     private Collection $boxes;
 
+    /**
+     * @var Collection<int, Appointment>
+     */
+    #[ORM\OneToMany(mappedBy: 'odontologo', targetEntity: Appointment::class, orphanRemoval: true)]
+    private Collection $appointments;
+
     public function __construct()
     {
         $this->boxes = new ArrayCollection();
+        $this->appointments = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -122,6 +129,36 @@ class Dentist
             // set the owning side to null (unless already changed)
             if ($box->getDentist() === $this) {
                 $box->setDentist(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Appointment>
+     */
+    public function getAppointments(): Collection
+    {
+        return $this->appointments;
+    }
+
+    public function addAppointment(Appointment $appointment): static
+    {
+        if (!$this->appointments->contains($appointment)) {
+            $this->appointments->add($appointment);
+            $appointment->setOdontologo($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAppointment(Appointment $appointment): static
+    {
+        if ($this->appointments->removeElement($appointment)) {
+            // set the owning side to null (unless already changed)
+            if ($appointment->getOdontologo() === $this) {
+                $appointment->setOdontologo(null);
             }
         }
 

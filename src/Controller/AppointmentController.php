@@ -10,6 +10,7 @@ use App\Repository\AppointmentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Annotation\Route;
@@ -26,9 +27,18 @@ class AppointmentController extends AbstractController
     ) {}
 
     #[Route('', name: 'app_appointment_list', methods: ['GET'])]
-    public function list(): JsonResponse
+    public function list(Request $request): JsonResponse
     {
-        $appointments = $this->appointmentRepository->findAll();
+        $patientId = $request->query->get('patientId');
+        $dentistId = $request->query->get('dentistId');
+        $fecha = $request->query->get('fecha');
+
+        $criteria = [];
+        if ($patientId) $criteria['paciente'] = $patientId;
+        if ($dentistId) $criteria['odontologo'] = $dentistId;
+        if ($fecha) $criteria['fecha'] = new \DateTime($fecha);
+
+        $appointments = $this->appointmentRepository->findBy($criteria);
 
         $responseDtos = array_map(
             fn(Appointment $appointment) => $this->appointmentMapper->toResponseDto($appointment),
