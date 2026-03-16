@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1>Recordatorio de Cita</h1>
+    <p>Hola {{ patient.nombre }},</p>
+    <p>Este es un recordatorio de tu cita para mañana:</p>
+    <ul>
+        <li><strong>Fecha:</strong> {{ appointment.fecha|date('d/m/Y') }}</li>
+        <li><strong>Hora:</strong> {{ appointment.horaInicio|date('H:i') }}</li>
+        <li><strong>Dentista:</strong> {{ appointment.odontologo.nombre }}</li>
+        <li><strong>Box:</strong> {{ appointment.box.nombre }}</li>
+    </ul>
+    <p>Por favor, si no puedes asistir, avísanos con antelación.</p>
+    <p>¡Hasta mañana!</p>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1>Cancelación de Cita</h1>
+    <p>Hola {{ patient.nombre }},</p>
+    <p>Te informamos que tu cita programada para el día <strong>{{ appointment.fecha|date('d/m/Y') }}</strong> a las <strong>{{ appointment.horaInicio|date('H:i') }}</strong> ha sido cancelada.</p>
+    <p>Si deseas reprogramarla, ponte en contacto con nosotros o reserva una nueva cita a través de nuestra web.</p>
+    <p>Un saludo,</p>
+    <p>El equipo de Dentify</p>
+{% endblock %}
