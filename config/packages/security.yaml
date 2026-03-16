@@ -15,15 +15,18 @@ security:
 
         # Firewall para login
         login:
-            pattern: ^/api/login
+            pattern: ^/api/login_check
             stateless: true
-            provider: app_user_provider
             json_login:
                 check_path: /api/login_check
-                username_path: login
-                password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
+        # Firewall para refresh token
+        refresh:
+            pattern: ^/api/token/refresh
+            stateless: true
+            refresh_jwt: ~
 
         # Firewall para proteger el resto de la API
         api:
@@ -32,5 +35,6 @@ security:
             jwt: ~
 
     access_control:
-        - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
+        - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
