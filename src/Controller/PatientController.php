@@ -6,10 +6,12 @@ use App\Dto\PatientCreateDTO;
 use App\Dto\PatientUpdateDTO;
 use App\Entity\Patient;
 use App\Entity\ClinicalHistory;
+use App\Entity\Appointment;
 use App\Mapper\PatientMapper;
 use App\Mapper\ClinicalHistoryMapper;
 use App\Mapper\OdontogramaMapper;
 use App\Mapper\RadiografiaMapper;
+use App\Mapper\AppointmentMapper;
 use App\Repository\PatientRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -30,6 +32,7 @@ class PatientController extends AbstractController
         private ClinicalHistoryMapper $clinicalHistoryMapper,
         private OdontogramaMapper $odontogramaMapper,
         private RadiografiaMapper $radiografiaMapper,
+        private AppointmentMapper $appointmentMapper,
         private EntityManagerInterface $entityManager
     ) {}
 
@@ -89,6 +92,18 @@ class PatientController extends AbstractController
         $responseDtos = array_map(
             fn(\App\Entity\Radiografia $radiografia) => $this->radiografiaMapper->toResponseDto($radiografia),
             $radiografias->toArray()
+        );
+
+        return $this->json($responseDtos);
+    }
+
+    #[Route('/{id}/appointments', name: 'app_patient_appointments_list', methods: ['GET'])]
+    public function appointments(Patient $patient): JsonResponse
+    {
+        $appointments = $patient->getAppointments();
+        $responseDtos = array_map(
+            fn(Appointment $appointment) => $this->appointmentMapper->toResponseDto($appointment),
+            $appointments->toArray()
         );
 
         return $this->json($responseDtos);
