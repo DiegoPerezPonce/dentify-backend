@@ -36,6 +36,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->id;
     }
 
+    // Email
     public function getEmail(): ?string
     {
         return $this->email;
@@ -47,6 +48,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    // Username
     public function getUsername(): ?string
     {
         return $this->username;
@@ -59,7 +61,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * Symfony usa este identificador internamente.
+     * Symfony usa este identificador internamente (JWT y login)
      * Aquí usamos el email como identificador principal.
      */
     public function getUserIdentifier(): string
@@ -67,16 +69,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return (string) $this->email;
     }
 
-    /**
-     * Roles del usuario
-     */
+    // Roles
     public function getRoles(): array
     {
         $roles = $this->roles;
-
-        // Garantiza que siempre tenga ROLE_USER
         $roles[] = 'ROLE_USER';
-
         return array_unique($roles);
     }
 
@@ -86,9 +83,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * Password hasheado
-     */
+    // Password
     public function getPassword(): ?string
     {
         return $this->password;
@@ -100,14 +95,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * Limpia datos sensibles (no lo usamos aquí)
-     */
+    // Limpia credenciales sensibles
     public function eraseCredentials(): void
     {
-        // Si guardaras un plainPassword, aquí lo limpiarías
+        // Si usaras un plainPassword, aquí lo limpiarías
     }
 
+    // Último acceso
     public function getUltimoAcceso(): ?\DateTime
     {
         return $this->ultimo_acceso;
