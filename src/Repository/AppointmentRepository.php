@@ -25,9 +25,10 @@ class AppointmentRepository extends ServiceEntityRepository
      * @param \DateTimeInterface $startTime
      * @param int $durationMinutes
      * @param int|null $excludeId
+     * @param int $bufferMinutes Optional buffer time in minutes to check around the range.
      * @return Appointment[]
      */
-    public function findOverlaps($dentist, $box, \DateTimeInterface $fecha, \DateTimeInterface $startTime, int $durationMinutes, ?int $excludeId = null): array
+    public function findOverlaps($dentist, $box, \DateTimeInterface $fecha, \DateTimeInterface $startTime, int $durationMinutes, ?int $excludeId = null, int $bufferMinutes = 0): array
     {
         $newStart = clone $startTime;
         $newEnd = (clone $startTime)->modify("+$durationMinutes minutes");
@@ -55,12 +56,16 @@ class AppointmentRepository extends ServiceEntityRepository
         /** @var Appointment[] $appointments */
         $appointments = $qb->getQuery()->getResult();
 
-        return array_filter($appointments, function (Appointment $appointment) use ($newStart, $newEnd) {
+        return array_filter($appointments, function (Appointment $appointment) use ($newStart, $newEnd, $bufferMinutes) {
             $existingStart = $appointment->getHoraInicio();
             $existingEnd = (clone $existingStart)->modify("+{$appointment->getDuracion()} minutes");
 
-            // Overlap condition: (StartA < EndB) AND (EndA > StartB)
-            return ($newStart < $existingEnd) && ($newEnd > $existingStart);
+            // Overlap condition with buffer: (StartA < EndB + buffer) AND (EndA > StartB - buffer)
+            // This ensures at least $bufferMinutes gap between appointments.
+            $bufferedExistingEnd = (clone $existingEnd)->modify("+$bufferMinutes minutes");
+            $bufferedExistingStart = (clone $existingStart)->modify("-$bufferMinutes minutes");
+
+            return ($newStart < $bufferedExistingEnd) && ($newEnd > $bufferedExistingStart);
         });
     }
 }

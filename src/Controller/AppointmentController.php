@@ -67,19 +67,21 @@ class AppointmentController extends AbstractController
             ], Response::HTTP_CONFLICT);
         }
 
-        // 2. Check for overlaps for Dentist
+        // 2. Check for overlaps for Dentist (with 5-minute gap)
         $dentistOverlaps = $this->appointmentRepository->findOverlaps(
             $appointment->getOdontologo(),
             null,
             $appointment->getFecha(),
             $appointment->getHoraInicio(),
-            $appointment->getDuracion()
+            $appointment->getDuracion(),
+            null,
+            5 // Enforce 5-minute gap
         );
 
         if (!empty($dentistOverlaps)) {
             return $this->json([
                 'error' => 'Conflict',
-                'message' => 'The dentist is already occupied during this time range.'
+                'message' => 'The dentist is already occupied or does not have the required 5-minute gap between appointments.'
             ], Response::HTTP_CONFLICT);
         }
 
@@ -121,20 +123,21 @@ class AppointmentController extends AbstractController
             ], Response::HTTP_CONFLICT);
         }
 
-        // 2. Check for overlaps for Dentist
+        // 2. Check for overlaps for Dentist (with 5-minute gap)
         $dentistOverlaps = $this->appointmentRepository->findOverlaps(
             $updatedAppointment->getOdontologo(),
             null,
             $updatedAppointment->getFecha(),
             $updatedAppointment->getHoraInicio(),
             $updatedAppointment->getDuracion(),
-            $appointment->getId()
+            $appointment->getId(),
+            5 // Enforce 5-minute gap
         );
 
         if (!empty($dentistOverlaps)) {
             return $this->json([
                 'error' => 'Conflict',
-                'message' => 'The dentist is already occupied during this time range.'
+                'message' => 'The dentist is already occupied or does not have the required 5-minute gap between appointments.'
             ], Response::HTTP_CONFLICT);
         }
 
