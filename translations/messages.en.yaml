@@ -1,0 +1,16 @@
+app:
+    name: Dentify
+    welcome: "Welcome to Dentify"
+    error:
+        conflict: "Conflict"
+        not_found: "Not Found"
+        insufficient_stock: "Insufficient stock. Current: %current%, Required: %required%"
+    appointment:
+        status:
+            programada: "Scheduled"
+            cancelada: "Cancelled"
+            completada: "Completed"
+        validation:
+            dentist_gap: "The dentist is already occupied or does not have the required 5-minute gap between appointments."
+            box_occupied: "The box is already occupied during this time range."
+            box_status: "The selected box is currently %status% and cannot be used."
