@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Dto\AppointmentCreateDTO;
 use App\Dto\AppointmentUpdateDTO;
+use App\Dto\AppointmentRescheduleDTO;
 use App\Entity\Appointment;
 use App\Mapper\AppointmentMapper;
 use App\Repository\AppointmentRepository;
@@ -59,46 +60,9 @@ class AppointmentController extends AbstractController
     {
         $appointment = $this->appointmentMapper->toEntity($appointmentCreateDTO);
         
-        // 1. Check Box status
-        if ($appointment->getBox()->getEstado() !== 'disponible') {
-            return $this->json([
-                'error' => 'Conflict',
-                'message' => 'The selected box is currently ' . $appointment->getBox()->getEstado() . ' and cannot be used.'
-            ], Response::HTTP_CONFLICT);
-        }
-
-        // 2. Check for overlaps for Dentist (with 5-minute gap)
-        $dentistOverlaps = $this->appointmentRepository->findOverlaps(
-            $appointment->getOdontologo(),
-            null,
-            $appointment->getFecha(),
-            $appointment->getHoraInicio(),
-            $appointment->getDuracion(),
-            null,
-            5 // Enforce 5-minute gap
-        );
-
-        if (!empty($dentistOverlaps)) {
-            return $this->json([
-                'error' => 'Conflict',
-                'message' => 'The dentist is already occupied or does not have the required 5-minute gap between appointments.'
-            ], Response::HTTP_CONFLICT);
-        }
-
-        // 3. Check for overlaps for Box
-        $boxOverlaps = $this->appointmentRepository->findOverlaps(
-            null,
-            $appointment->getBox(),
-            $appointment->getFecha(),
-            $appointment->getHoraInicio(),
-            $appointment->getDuracion()
-        );
-
-        if (!empty($boxOverlaps)) {
-            return $this->json([
-                'error' => 'Conflict',
-                'message' => 'The box is already occupied during this time range.'
-            ], Response::HTTP_CONFLICT);
+        $validationError = $this->validateAppointmentConstraints($appointment);
+        if ($validationError) {
+            return $validationError;
         }
 
         $this->entityManager->persist($appointment);
@@ -115,22 +79,83 @@ class AppointmentController extends AbstractController
     {
         $updatedAppointment = $this->appointmentMapper->updateEntity(clone $appointment, $appointmentUpdateDTO);
         
-        // 1. Check Box status if changed
-        if ($updatedAppointment->getBox() !== $appointment->getBox() && $updatedAppointment->getBox()->getEstado() !== 'disponible') {
+        $validationError = $this->validateAppointmentConstraints($updatedAppointment, $appointment->getId());
+        if ($validationError) {
+            return $validationError;
+        }
+
+        $this->appointmentMapper->updateEntity($appointment, $appointmentUpdateDTO);
+        $this->entityManager->flush();
+
+        return $this->json($this->appointmentMapper->toResponseDto($appointment));
+    }
+
+    #[Route('/{id}/cancel', name: 'app_appointment_cancel', methods: ['PUT'])]
+    public function cancel(Appointment $appointment): JsonResponse
+    {
+        $appointment->setEstado('cancelada');
+        $this->entityManager->flush();
+
+        return $this->json($this->appointmentMapper->toResponseDto($appointment));
+    }
+
+    #[Route('/{id}/reschedule', name: 'app_appointment_reschedule', methods: ['PUT'])]
+    public function reschedule(
+        Appointment $appointment, 
+        #[MapRequestPayload] AppointmentRescheduleDTO $rescheduleDTO
+    ): JsonResponse {
+        // Create a temporary clone to validate the new schedule
+        $testAppointment = clone $appointment;
+        $testAppointment->setFecha(new \DateTime($rescheduleDTO->fecha));
+        $testAppointment->setHoraInicio(new \DateTime($rescheduleDTO->hora_inicio));
+        $testAppointment->setDuracion($rescheduleDTO->duracion);
+
+        $validationError = $this->validateAppointmentConstraints($testAppointment, $appointment->getId());
+        if ($validationError) {
+            return $validationError;
+        }
+
+        // Apply changes if valid
+        $appointment->setFecha(new \DateTime($rescheduleDTO->fecha));
+        $appointment->setHoraInicio(new \DateTime($rescheduleDTO->hora_inicio));
+        $appointment->setDuracion($rescheduleDTO->duracion);
+        $appointment->setEstado('programada'); // Reset state if it was cancelled or similar
+
+        $this->entityManager->flush();
+
+        return $this->json($this->appointmentMapper->toResponseDto($appointment));
+    }
+
+    #[Route('/{id}', name: 'app_appointment_delete', methods: ['DELETE'])]
+    public function delete(Appointment $appointment): JsonResponse
+    {
+        $this->entityManager->remove($appointment);
+        $this->entityManager->flush();
+
+        return $this->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Centralized validation for box availability, dentist overlaps (with gap), and box overlaps.
+     */
+    private function validateAppointmentConstraints(Appointment $appointment, ?int $excludeId = null): ?JsonResponse
+    {
+        // 1. Check Box status
+        if ($appointment->getBox()->getEstado() !== 'disponible') {
             return $this->json([
                 'error' => 'Conflict',
-                'message' => 'The selected box is currently ' . $updatedAppointment->getBox()->getEstado() . ' and cannot be used.'
+                'message' => 'The selected box is currently ' . $appointment->getBox()->getEstado() . ' and cannot be used.'
             ], Response::HTTP_CONFLICT);
         }
 
         // 2. Check for overlaps for Dentist (with 5-minute gap)
         $dentistOverlaps = $this->appointmentRepository->findOverlaps(
-            $updatedAppointment->getOdontologo(),
+            $appointment->getOdontologo(),
             null,
-            $updatedAppointment->getFecha(),
-            $updatedAppointment->getHoraInicio(),
-            $updatedAppointment->getDuracion(),
-            $appointment->getId(),
+            $appointment->getFecha(),
+            $appointment->getHoraInicio(),
+            $appointment->getDuracion(),
+            $excludeId,
             5 // Enforce 5-minute gap
         );
 
@@ -144,11 +169,11 @@ class AppointmentController extends AbstractController
         // 3. Check for overlaps for Box
         $boxOverlaps = $this->appointmentRepository->findOverlaps(
             null,
-            $updatedAppointment->getBox(),
-            $updatedAppointment->getFecha(),
-            $updatedAppointment->getHoraInicio(),
-            $updatedAppointment->getDuracion(),
-            $appointment->getId()
+            $appointment->getBox(),
+            $appointment->getFecha(),
+            $appointment->getHoraInicio(),
+            $appointment->getDuracion(),
+            $excludeId
         );
 
         if (!empty($boxOverlaps)) {
@@ -158,18 +183,6 @@ class AppointmentController extends AbstractController
             ], Response::HTTP_CONFLICT);
         }
 
-        $this->appointmentMapper->updateEntity($appointment, $appointmentUpdateDTO);
-        $this->entityManager->flush();
-
-        return $this->json($this->appointmentMapper->toResponseDto($appointment));
-    }
-
-    #[Route('/{id}', name: 'app_appointment_delete', methods: ['DELETE'])]
-    public function delete(Appointment $appointment): JsonResponse
-    {
-        $this->entityManager->remove($appointment);
-        $this->entityManager->flush();
-
-        return $this->json(null, Response::HTTP_NO_CONTENT);
+        return null;
     }
 }
