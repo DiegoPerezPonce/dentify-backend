@@ -7,6 +7,7 @@ use App\Dto\AppointmentUpdateDTO;
 use App\Dto\AppointmentRescheduleDTO;
 use App\Entity\Appointment;
 use App\Mapper\AppointmentMapper;
+use App\Service\EmailService;
 use App\Repository\AppointmentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,7 +25,8 @@ class AppointmentController extends AbstractController
     public function __construct(
         private AppointmentRepository $appointmentRepository,
         private AppointmentMapper $appointmentMapper,
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $entityManager,
+        private EmailService $emailService
     ) {}
 
     #[Route('', name: 'app_appointment_list', methods: ['GET'])]
@@ -68,6 +70,9 @@ class AppointmentController extends AbstractController
         $this->entityManager->persist($appointment);
         $this->entityManager->flush();
 
+        // Send confirmation email
+        $this->emailService->sendAppointmentConfirmation($appointment);
+
         return $this->json(
             $this->appointmentMapper->toResponseDto($appointment),
             Response::HTTP_CREATED
@@ -95,6 +100,9 @@ class AppointmentController extends AbstractController
     {
         $appointment->setEstado('cancelada');
         $this->entityManager->flush();
+
+        // Send cancellation email
+        $this->emailService->sendAppointmentCancellation($appointment);
 
         return $this->json($this->appointmentMapper->toResponseDto($appointment));
     }
