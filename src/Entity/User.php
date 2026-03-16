@@ -8,7 +8,7 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
+#[ORM\Table(name: 'user')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -16,23 +16,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 180)]
+    #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
 
-    /**
-     * @var list<string> The user roles
-     */
+    #[ORM\Column(length: 180, unique: true)]
+    private ?string $username = null;
+
     #[ORM\Column]
     private array $roles = [];
 
-    /**
-     * @var string The hashed password
-     */
     #[ORM\Column]
     private ?string $password = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $nombre_usuario = null;
 
     #[ORM\Column(nullable: true)]
     private ?\DateTime $ultimo_acceso = null;
@@ -42,6 +36,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->id;
     }
 
+    // Email
     public function getEmail(): ?string
     {
         return $this->email;
@@ -50,45 +45,45 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEmail(string $email): static
     {
         $this->email = $email;
+        return $this;
+    }
 
+    // Username
+    public function getUsername(): ?string
+    {
+        return $this->username;
+    }
+
+    public function setUsername(string $username): static
+    {
+        $this->username = $username;
         return $this;
     }
 
     /**
-     * A visual identifier that represents this user.
-     *
-     * @see UserInterface
+     * Symfony usa este identificador internamente (JWT y login)
+     * Aquí usamos el email como identificador principal.
      */
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
     }
 
-    /**
-     * @see UserInterface
-     */
+    // Roles
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
-
         return array_unique($roles);
     }
 
-    /**
-     * @param list<string> $roles
-     */
     public function setRoles(array $roles): static
     {
         $this->roles = $roles;
-
         return $this;
     }
 
-    /**
-     * @see PasswordAuthenticatedUserInterface
-     */
+    // Password
     public function getPassword(): ?string
     {
         return $this->password;
@@ -97,39 +92,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): static
     {
         $this->password = $password;
-
         return $this;
     }
 
-    /**
-     * Ensure the session doesn't contain actual password hashes by CRC32C-hashing them, as supported since Symfony 7.3.
-     */
-    public function __serialize(): array
-    {
-        $data = (array) $this;
-        $data["\0" . self::class . "\0password"] = hash('crc32c', $this->password);
-        
-        return $data;
-    }
-
-    #[\Deprecated]
+    // Limpia credenciales sensibles
     public function eraseCredentials(): void
     {
-        // @deprecated, to be removed when upgrading to Symfony 8
+        // Si usaras un plainPassword, aquí lo limpiarías
     }
 
-    public function getNombreUsuario(): ?string
-    {
-        return $this->nombre_usuario;
-    }
-
-    public function setNombreUsuario(string $nombre_usuario): static
-    {
-        $this->nombre_usuario = $nombre_usuario;
-
-        return $this;
-    }
-
+    // Último acceso
     public function getUltimoAcceso(): ?\DateTime
     {
         return $this->ultimo_acceso;
@@ -138,7 +110,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUltimoAcceso(?\DateTime $ultimo_acceso): static
     {
         $this->ultimo_acceso = $ultimo_acceso;
-
         return $this;
     }
 }
