@@ -19,12 +19,18 @@ class UserProvider implements UserProviderInterface
     }
 
     /**
-     * Symfony llama a este método cuando alguien intenta autenticarse
+     * Symfony llama a este método cuando alguien intenta autenticarse.
+     * Acepta tanto email como username en el campo "login".
      */
     public function loadUserByIdentifier(string $identifier): UserInterface
     {
-        // Buscar usuario por email (o username si lo prefieres)
-        $user = $this->userRepository->findOneBy(['email' => $identifier]);
+        // Si el identificador contiene "@", asumimos que es un email
+        if (str_contains($identifier, '@')) {
+            $user = $this->userRepository->findOneBy(['email' => $identifier]);
+        } else {
+            // Si no, buscamos por username
+            $user = $this->userRepository->findOneBy(['username' => $identifier]);
+        }
 
         if (!$user) {
             throw new UserNotFoundException(sprintf('Usuario "%s" no encontrado.', $identifier));
