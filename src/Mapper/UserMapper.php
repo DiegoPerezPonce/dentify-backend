@@ -18,7 +18,7 @@ class UserMapper
     {
         $user = new User();
         $user->setEmail($dto->email);
-        $user->setNombreUsuario($dto->nombre_usuario);
+        $user->setUsername($dto->nombre_usuario);
         $user->setRoles($dto->roles);
 
         $hashedPassword = $this->passwordHasher->hashPassword($user, $dto->password);
@@ -33,7 +33,7 @@ class UserMapper
             $user->setEmail($dto->email);
         }
         if ($dto->nombre_usuario !== null) {
-            $user->setNombreUsuario($dto->nombre_usuario);
+            $user->setUsername($dto->nombre_usuario);
         }
         if ($dto->roles !== null) {
             $user->setRoles($dto->roles);
@@ -51,7 +51,7 @@ class UserMapper
         $dto = new UserResponseDTO();
         $dto->id = $user->getId();
         $dto->email = $user->getEmail();
-        $dto->nombre_usuario = $user->getNombreUsuario();
+        $dto->nombre_usuario = $user->getUsername();
         $dto->roles = $user->getRoles();
         $dto->ultimo_acceso = $user->getUltimoAcceso()?->format(\DateTimeInterface::ATOM);
 
