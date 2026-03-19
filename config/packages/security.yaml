@@ -1,10 +1,8 @@
-# config/packages/security.yaml
 security:
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
 
     providers:
-        # Nuestro UserProvider custom
         app_user_provider:
             id: App\Security\UserProvider
 
@@ -13,21 +11,22 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        # Firewall para login
         login:
-            pattern: ^/api/login_check
+            pattern: ^/api/login
             stateless: true
+            provider: app_user_provider
             json_login:
-                check_path: /api/login_check
+                check_path: /api/login
+                username_path: email
+                password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
-        # Firewall para proteger el resto de la API
         api:
             pattern: ^/api
             stateless: true
             jwt: ~
 
     access_control:
-        - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
-        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
