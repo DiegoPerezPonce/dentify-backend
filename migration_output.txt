@@ -1,0 +1,3 @@
+﻿[notice] Migrating up to DoctrineMigrations\Version20260320152943
+[info] ++ migrating DoctrineMigrations\Version20260320150343
+[debug] CREATE TABLE appointment (id INT AUTO_INCREMENT NOT NULL, fecha DATE NOT NULL, hora_inicio TIME NOT NULL, duracion INT NOT NULL, prioridad VARCHAR(20) NOT NULL, estado VARCHAR(20) NOT NULL, paciente_id INT NOT NULL, odontologo_id INT NOT NULL, box_id INT NOT NULL, INDEX IDX_FE38F8447310DAD4 (paciente_id), INDEX IDX_FE38F844C1C6A359 (odontologo_id), INDEX IDX_FE38F844D8177B3F (box_id), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4 
