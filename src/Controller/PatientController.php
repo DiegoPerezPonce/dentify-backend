@@ -94,6 +94,21 @@ class PatientController extends AbstractController
         return $this->json($responseDtos);
     }
 
+    #[Route('/{id}/odontogramas', name: 'app_patient_odontograma_create', methods: ['POST'])]
+    public function createOdontograma(Patient $patient): JsonResponse
+    {
+        $odontograma = new \App\Entity\Odontograma();
+        $odontograma->setPatient($patient);
+        
+        $this->entityManager->persist($odontograma);
+        $this->entityManager->flush();
+
+        return $this->json(
+            $this->odontogramaMapper->toResponseDto($odontograma),
+            Response::HTTP_CREATED
+        );
+    }
+
     #[Route('/{id}/radiografias', name: 'app_patient_radiografias_list', methods: ['GET'])]
     public function radiografias(Patient $patient): JsonResponse
     {
