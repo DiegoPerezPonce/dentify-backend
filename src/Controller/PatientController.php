@@ -39,20 +39,29 @@ class PatientController extends AbstractController
     #[Route('', name: 'app_patient_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
-        $searchTerm = $request->query->get('q');
-        
-        if ($searchTerm) {
-            $patients = $this->patientRepository->findBySearchTerm($searchTerm);
-        } else {
-            $patients = $this->patientRepository->findAll();
+        $searchRaw = $request->query->get('search');
+        if (!\is_string($searchRaw) || $searchRaw === '') {
+            $searchRaw = $request->query->get('q');
         }
+        $searchTerm = \is_string($searchRaw) && $searchRaw !== '' ? $searchRaw : null;
 
-        $responseDtos = array_map(
+        $page = max(1, (int) $request->query->get('page', 1));
+        $itemsPerPage = (int) $request->query->get('itemsPerPage', 10);
+        if ($itemsPerPage < 1) {
+            $itemsPerPage = 10;
+        }
+        $itemsPerPage = min($itemsPerPage, 100);
+
+        $result = $this->patientRepository->findPaginated($searchTerm, $page, $itemsPerPage);
+        $items = array_map(
             fn(Patient $patient) => $this->patientMapper->toResponseDto($patient),
-            $patients
+            $result['items']
         );
 
-        return $this->json($responseDtos);
+        return $this->json([
+            'items' => $items,
+            'total' => $result['total'],
+        ]);
     }
 
     #[Route('/{id}', name: 'app_patient_get', methods: ['GET'])]
