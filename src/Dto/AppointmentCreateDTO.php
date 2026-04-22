@@ -31,4 +31,10 @@ class AppointmentCreateDTO
 
     #[Assert\NotBlank]
     public ?string $estado = 'programada';
+
+    public ?string $treatment = null;
+
+    public bool $isInfectious = false;
+
+    public ?string $notes = null;
 }

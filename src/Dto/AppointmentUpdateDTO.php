@@ -12,4 +12,7 @@ class AppointmentUpdateDTO
     public ?int $duracion = null;
     public ?string $prioridad = null;
     public ?string $estado = null;
+    public ?string $treatment = null;
+    public ?bool $isInfectious = null;
+    public ?string $notes = null;
 }

@@ -59,11 +59,22 @@ class AppointmentMapper
         if (property_exists($dto, 'estado') && $dto->estado !== null) {
             $appointment->setEstado($dto->estado);
         }
+        if (property_exists($dto, 'treatment') && $dto->treatment !== null) {
+            $appointment->setTreatment($dto->treatment);
+        }
+        if (property_exists($dto, 'isInfectious')) {
+            $appointment->setIsInfectious($dto->isInfectious ?? false);
+        }
+        if (property_exists($dto, 'notes') && $dto->notes !== null) {
+            $appointment->setNotes($dto->notes);
+        }
     }
 
     public function toResponseDto(Appointment $appointment): AppointmentResponseDTO
     {
         $dto = new AppointmentResponseDTO();
+        
+        // Campos originales
         $dto->id = $appointment->getId();
         $dto->pacienteId = $appointment->getPaciente()?->getId();
         $dto->pacienteNombre = $appointment->getPaciente()?->getNombre() . ' ' . $appointment->getPaciente()?->getApellidos();
@@ -76,6 +87,29 @@ class AppointmentMapper
         $dto->duracion = $appointment->getDuracion();
         $dto->prioridad = $appointment->getPrioridad();
         $dto->estado = $appointment->getEstado();
+        $dto->treatment = $appointment->getTreatment();
+        $dto->isInfectious = $appointment->getIsInfectious();
+        $dto->notes = $appointment->getNotes();
+
+        // Campos de compatibilidad con frontend (camelCase)
+        $dto->patientId = $dto->pacienteId;
+        $dto->patientName = $dto->pacienteNombre;
+        $dto->dentistId = $dto->odontologoId;
+        $dto->dentistName = $dto->odontologoNombre;
+        $dto->status = $dto->estado;
+        $dto->isInfectiousPatient = $dto->isInfectious;
+
+        // Generar startDateTime y endDateTime en formato ISO 8601
+        if ($appointment->getFecha() && $appointment->getHoraInicio()) {
+            $fecha = $appointment->getFecha()->format('Y-m-d');
+            $hora = $appointment->getHoraInicio()->format('H:i:s');
+            $startDateTime = new \DateTime($fecha . ' ' . $hora);
+            $dto->startDateTime = $startDateTime->format('c'); // ISO 8601
+            
+            $endDateTime = clone $startDateTime;
+            $endDateTime->modify('+' . $appointment->getDuracion() . ' minutes');
+            $dto->endDateTime = $endDateTime->format('c');
+        }
 
         return $dto;
     }

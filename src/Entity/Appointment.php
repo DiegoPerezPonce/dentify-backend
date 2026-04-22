@@ -51,6 +51,15 @@ class Appointment
     #[Assert\NotBlank]
     private ?string $estado = 'programada';
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $treatment = null;
+
+    #[ORM\Column(type: Types::BOOLEAN)]
+    private bool $isInfectious = false;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $notes = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -148,6 +157,42 @@ class Appointment
     public function setEstado(string $estado): static
     {
         $this->estado = $estado;
+
+        return $this;
+    }
+
+    public function getTreatment(): ?string
+    {
+        return $this->treatment;
+    }
+
+    public function setTreatment(?string $treatment): static
+    {
+        $this->treatment = $treatment;
+
+        return $this;
+    }
+
+    public function getIsInfectious(): bool
+    {
+        return $this->isInfectious;
+    }
+
+    public function setIsInfectious(bool $isInfectious): static
+    {
+        $this->isInfectious = $isInfectious;
+
+        return $this;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function setNotes(?string $notes): static
+    {
+        $this->notes = $notes;
 
         return $this;
     }

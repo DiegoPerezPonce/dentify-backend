@@ -16,4 +16,17 @@ class AppointmentResponseDTO
     public ?int $duracion = null;
     public ?string $prioridad = null;
     public ?string $estado = null;
+    public ?string $treatment = null;
+    public bool $isInfectious = false;
+    public ?string $notes = null;
+    
+    // Campos adicionales para compatibilidad con frontend
+    public ?string $startDateTime = null;
+    public ?string $endDateTime = null;
+    public ?int $patientId = null;
+    public ?string $patientName = null;
+    public ?int $dentistId = null;
+    public ?string $dentistName = null;
+    public ?string $status = null;
+    public ?bool $isInfectiousPatient = null;
 }
