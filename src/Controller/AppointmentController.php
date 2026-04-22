@@ -191,6 +191,24 @@ class AppointmentController extends AbstractController
             ], Response::HTTP_CONFLICT);
         }
 
+        // 4. Check infectious patient rules: must be scheduled last of the day
+        if ($appointment->getIsInfectious()) {
+            $laterAppointments = $this->appointmentRepository->findLaterAppointmentsSameDay(
+                $appointment->getOdontologo(),
+                $appointment->getBox(),
+                $appointment->getFecha(),
+                $appointment->getHoraInicio(),
+                $excludeId
+            );
+
+            if (!empty($laterAppointments)) {
+                return $this->json([
+                    'error' => 'Conflict',
+                    'message' => 'Infectious patients must be scheduled as the last appointment of the day (Peticiones #5).'
+                ], Response::HTTP_CONFLICT);
+            }
+        }
+
         return null;
     }
 }
