@@ -32,23 +32,159 @@ class AppointmentController extends AbstractController
     #[Route('', name: 'app_appointment_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
-        $patientId = $request->query->get('patientId');
-        $dentistId = $request->query->get('dentistId');
-        $fecha = $request->query->get('fecha');
+        $filters = [];
 
-        $criteria = [];
-        if ($patientId) $criteria['paciente'] = $patientId;
-        if ($dentistId) $criteria['odontologo'] = $dentistId;
-        if ($fecha) $criteria['fecha'] = new \DateTime($fecha);
+        foreach (['patientId' => 'patientId', 'dentistId' => 'dentistId', 'boxId' => 'boxId'] as $queryKey => $filterKey) {
+            $raw = $request->query->get($queryKey);
+            if ($raw === null || $raw === '') {
+                continue;
+            }
+            if (!ctype_digit((string) $raw)) {
+                return $this->json(
+                    ['error' => 'Bad Request', 'message' => sprintf('Invalid %s.', $queryKey)],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            $filters[$filterKey] = (int) $raw;
+        }
 
-        $appointments = $this->appointmentRepository->findBy($criteria);
+        $startDateRaw = $request->query->get('startDate');
+        $endDateRaw = $request->query->get('endDate');
+        $fechaRaw = $request->query->get('fecha');
+
+        if ($startDateRaw !== null && $startDateRaw !== '') {
+            $start = $this->parseListDate($startDateRaw);
+            if ($start === null) {
+                return $this->json(
+                    ['error' => 'Bad Request', 'message' => 'Invalid startDate.'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            $filters['startDate'] = $start;
+        }
+        if ($endDateRaw !== null && $endDateRaw !== '') {
+            $end = $this->parseListDate($endDateRaw);
+            if ($end === null) {
+                return $this->json(
+                    ['error' => 'Bad Request', 'message' => 'Invalid endDate.'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            $filters['endDate'] = $end;
+        }
+        if (
+            ($startDateRaw === null || $startDateRaw === '')
+            && ($endDateRaw === null || $endDateRaw === '')
+            && $fechaRaw !== null && $fechaRaw !== ''
+        ) {
+            $day = $this->parseListDate($fechaRaw);
+            if ($day === null) {
+                return $this->json(
+                    ['error' => 'Bad Request', 'message' => 'Invalid fecha.'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            $filters['startDate'] = $day;
+            $filters['endDate'] = $day;
+        }
+
+        $statusRaw = $request->query->get('status');
+        if ($statusRaw !== null && $statusRaw !== '') {
+            $estado = $this->normalizeStatusFilter((string) $statusRaw);
+            if ($estado === null) {
+                return $this->json(
+                    ['error' => 'Bad Request', 'message' => 'Invalid status.'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            $filters['estado'] = $estado;
+        }
+
+        $pagination = $this->resolveListPagination($request);
+        if ($pagination instanceof JsonResponse) {
+            return $pagination;
+        }
+        [$offset, $limit] = $pagination;
+
+        [$appointments, $total] = $this->appointmentRepository->findList($filters, $offset, $limit);
 
         $responseDtos = array_map(
-            fn(Appointment $appointment) => $this->appointmentMapper->toResponseDto($appointment),
+            fn (Appointment $appointment) => $this->appointmentMapper->toResponseDto($appointment),
             $appointments
         );
 
-        return $this->json($responseDtos);
+        $response = $this->json($responseDtos);
+        $response->headers->set('X-Total-Count', (string) $total);
+
+        return $response;
+    }
+
+    private function parseListDate(string $raw): ?\DateTimeImmutable
+    {
+        try {
+            return new \DateTimeImmutable(trim($raw));
+        } catch (\Exception) {
+            return null;
+        }
+    }
+
+    /**
+     * Maps frontend AppointmentStatus values to DB estado; accepts Spanish estado as-is.
+     */
+    private function normalizeStatusFilter(string $status): ?string
+    {
+        $norm = strtolower(trim($status));
+        $map = [
+            'scheduled' => 'programada',
+            'confirmed' => 'confirmada',
+            'completed' => 'completada',
+            'cancelled' => 'cancelada',
+            'no_show' => 'no_show',
+        ];
+        if (isset($map[$norm])) {
+            return $map[$norm];
+        }
+
+        if (preg_match('/^[a-záéíóúñ_]+$/u', $norm) === 1) {
+            return $norm;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return JsonResponse|array{0: int|null, 1: int|null}
+     */
+    private function resolveListPagination(Request $request): JsonResponse|array
+    {
+        $pageRaw = $request->query->get('page');
+        $itemsRaw = $request->query->get('itemsPerPage');
+
+        if (
+            ($pageRaw === null || $pageRaw === '')
+            && ($itemsRaw === null || $itemsRaw === '')
+        ) {
+            return [null, null];
+        }
+
+        if ($pageRaw !== null && $pageRaw !== '' && (!ctype_digit((string) $pageRaw) || (int) $pageRaw < 1)) {
+            return $this->json(
+                ['error' => 'Bad Request', 'message' => 'Invalid page.'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        if ($itemsRaw !== null && $itemsRaw !== '' && !ctype_digit((string) $itemsRaw)) {
+            return $this->json(
+                ['error' => 'Bad Request', 'message' => 'Invalid itemsPerPage.'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        $page = ($pageRaw === null || $pageRaw === '') ? 1 : (int) $pageRaw;
+        $itemsPerPage = ($itemsRaw === null || $itemsRaw === '') ? 30 : max(1, min(100, (int) $itemsRaw));
+
+        return [($page - 1) * $itemsPerPage, $itemsPerPage];
     }
 
     #[Route('/{id}', name: 'app_appointment_get', methods: ['GET'])]
