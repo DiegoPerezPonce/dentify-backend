@@ -11,6 +11,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -47,8 +48,12 @@ class BoxController extends AbstractController
     #[Route('', name: 'app_box_create', methods: ['POST'])]
     public function create(#[MapRequestPayload] BoxCreateDTO $boxCreateDTO): JsonResponse
     {
-        $box = $this->boxMapper->toEntity($boxCreateDTO);
-        
+        try {
+            $box = $this->boxMapper->toEntity($boxCreateDTO);
+        } catch (\InvalidArgumentException $e) {
+            throw new BadRequestHttpException($e->getMessage());
+        }
+
         $this->entityManager->persist($box);
         $this->entityManager->flush();
 
@@ -61,8 +66,12 @@ class BoxController extends AbstractController
     #[Route('/{id}', name: 'app_box_update', methods: ['PUT', 'PATCH'])]
     public function update(Box $box, #[MapRequestPayload] BoxUpdateDTO $boxUpdateDTO): JsonResponse
     {
-        $box = $this->boxMapper->updateEntity($box, $boxUpdateDTO);
-        
+        try {
+            $box = $this->boxMapper->updateEntity($box, $boxUpdateDTO);
+        } catch (\InvalidArgumentException $e) {
+            throw new BadRequestHttpException($e->getMessage());
+        }
+
         $this->entityManager->flush();
 
         return $this->json($this->boxMapper->toResponseDto($box));
