@@ -135,8 +135,9 @@ for ($i = 0; $i < 5; $i++) {
 for ($i = 1; $i <= 5; $i++) {
     $material = new StockMaterial();
     $material->setNombre("Material $i");
-    $material->setCantidadActual(100.0);
-    $material->setUnidad("unidades");
+    $material->setCantidadActual($i === 1 ? 5.0 : 100.0);
+    $material->setUnidad('unidades');
+    $material->setUmbralMinimo(10.0);
     $entityManager->persist($material);
 }
 
