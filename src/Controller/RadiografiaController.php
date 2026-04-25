@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Patient;
+use App\Entity\Radiografia;
 use App\Mapper\RadiografiaMapper;
 use App\Repository\RadiografiaRepository;
 use Doctrine\ORM\EntityManagerInterface;

@@ -1,14 +1,14 @@
 nelmio_cors:
     defaults:
         origin_regex: true
-        allow_origin: ['http://localhost:4200'] # <--- Tu app de Angular
+        allow_origin: ['http://localhost:4200', 'http://127.0.0.1:4200'] # <--- Angular desde localhost o 127.0.0.1
         allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
         allow_headers: ['Content-Type', 'Authorization']
         expose_headers: ['Link', 'X-Total-Count']
         max_age: 3600
     paths:
         '^/api/':
-            allow_origin: ['http://localhost:4200']
+            allow_origin: ['http://localhost:4200', 'http://127.0.0.1:4200']
             allow_methods: ['POST', 'PUT', 'GET', 'DELETE', 'OPTIONS']
             allow_headers: ['content-type', 'authorization']
             expose_headers: ['Link', 'X-Total-Count']
