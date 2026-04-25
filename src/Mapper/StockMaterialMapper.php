@@ -35,6 +35,9 @@ class StockMaterialMapper
         if (property_exists($dto, 'unidad') && $dto->unidad !== null) {
             $entity->setUnidad($dto->unidad);
         }
+        if (property_exists($dto, 'umbral_minimo') && $dto->umbral_minimo !== null) {
+            $entity->setUmbralMinimo($dto->umbral_minimo);
+        }
         if (property_exists($dto, 'fecha_ultima_reposicion') && $dto->fecha_ultima_reposicion !== null) {
             $entity->setFechaUltimaReposicion(new \DateTime($dto->fecha_ultima_reposicion));
         }
@@ -46,6 +49,9 @@ class StockMaterialMapper
         $dto->id = $entity->getId();
         $dto->nombre = $entity->getNombre();
         $dto->cantidad_actual = $entity->getCantidadActual();
+        $umbral = $entity->getUmbralMinimo() ?? 10.0;
+        $dto->umbral_minimo = $umbral;
+        $dto->is_low_stock = $entity->getCantidadActual() <= $umbral;
         $dto->unidad = $entity->getUnidad();
         $dto->fecha_ultima_reposicion = $entity->getFechaUltimaReposicion()?->format('Y-m-d');
 

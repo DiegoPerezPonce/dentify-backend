@@ -13,5 +13,8 @@ class StockMaterialUpdateDTO
 
     public ?string $unidad = null;
 
+    #[Assert\PositiveOrZero]
+    public ?float $umbral_minimo = null;
+
     public ?string $fecha_ultima_reposicion = null;
 }

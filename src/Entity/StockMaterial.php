@@ -25,6 +25,11 @@ class StockMaterial
     #[Assert\PositiveOrZero]
     private ?float $cantidad_actual = null;
 
+    /** Minimum stock level; cantidad_actual at or below this is considered low stock. */
+    #[ORM\Column(type: Types::FLOAT)]
+    #[Assert\PositiveOrZero]
+    private ?float $umbral_minimo = 10.0;
+
     #[ORM\Column(length: 50)]
     #[Assert\NotBlank]
     private ?string $unidad = null;
@@ -57,6 +62,18 @@ class StockMaterial
     public function setCantidadActual(float $cantidad_actual): static
     {
         $this->cantidad_actual = $cantidad_actual;
+
+        return $this;
+    }
+
+    public function getUmbralMinimo(): ?float
+    {
+        return $this->umbral_minimo;
+    }
+
+    public function setUmbralMinimo(float $umbral_minimo): static
+    {
+        $this->umbral_minimo = $umbral_minimo;
 
         return $this;
     }

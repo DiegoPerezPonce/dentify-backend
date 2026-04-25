@@ -157,12 +157,13 @@ class SeedCommand extends Command
             }
             $io->text('Appointments seeded.');
 
-            // 6. Stock Materials
+            // 6. Stock Materials (first line below threshold for low-stock demos / notifications)
             for ($i = 1; $i <= 5; $i++) {
                 $material = new StockMaterial();
                 $material->setNombre("Material $i");
-                $material->setCantidadActual(100.0);
-                $material->setUnidad("unidades");
+                $material->setCantidadActual($i === 1 ? 5.0 : 100.0);
+                $material->setUnidad('unidades');
+                $material->setUmbralMinimo(10.0);
                 $this->entityManager->persist($material);
             }
             $io->text('Stock materials persisted.');
