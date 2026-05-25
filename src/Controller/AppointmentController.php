@@ -9,12 +9,14 @@ use App\Entity\Appointment;
 use App\Mapper\AppointmentMapper;
 use App\Service\EmailService;
 use App\Repository\AppointmentRepository;
+use App\Service\ClinicHoursValidator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -26,7 +28,8 @@ class AppointmentController extends AbstractController
         private AppointmentRepository $appointmentRepository,
         private AppointmentMapper $appointmentMapper,
         private EntityManagerInterface $entityManager,
-        private EmailService $emailService
+        private EmailService $emailService,
+        private ClinicHoursValidator $clinicHoursValidator
     ) {}
 
     #[Route('', name: 'app_appointment_list', methods: ['GET'])]
@@ -196,7 +199,11 @@ class AppointmentController extends AbstractController
     #[Route('', name: 'app_appointment_create', methods: ['POST'])]
     public function create(#[MapRequestPayload] AppointmentCreateDTO $appointmentCreateDTO): JsonResponse
     {
-        $appointment = $this->appointmentMapper->toEntity($appointmentCreateDTO);
+        try {
+            $appointment = $this->appointmentMapper->toEntity($appointmentCreateDTO);
+        } catch (\InvalidArgumentException $e) {
+            throw new BadRequestHttpException($e->getMessage());
+        }
         
         $validationError = $this->validateAppointmentConstraints($appointment);
         if ($validationError) {
@@ -218,14 +225,22 @@ class AppointmentController extends AbstractController
     #[Route('/{id}', name: 'app_appointment_update', methods: ['PUT', 'PATCH'])]
     public function update(Appointment $appointment, #[MapRequestPayload] AppointmentUpdateDTO $appointmentUpdateDTO): JsonResponse
     {
-        $updatedAppointment = $this->appointmentMapper->updateEntity(clone $appointment, $appointmentUpdateDTO);
+        try {
+            $updatedAppointment = $this->appointmentMapper->updateEntity(clone $appointment, $appointmentUpdateDTO);
+        } catch (\InvalidArgumentException $e) {
+            throw new BadRequestHttpException($e->getMessage());
+        }
         
         $validationError = $this->validateAppointmentConstraints($updatedAppointment, $appointment->getId());
         if ($validationError) {
             return $validationError;
         }
 
-        $this->appointmentMapper->updateEntity($appointment, $appointmentUpdateDTO);
+        try {
+            $this->appointmentMapper->updateEntity($appointment, $appointmentUpdateDTO);
+        } catch (\InvalidArgumentException $e) {
+            throw new BadRequestHttpException($e->getMessage());
+        }
         $this->entityManager->flush();
 
         return $this->json($this->appointmentMapper->toResponseDto($appointment));
@@ -284,6 +299,14 @@ class AppointmentController extends AbstractController
      */
     private function validateAppointmentConstraints(Appointment $appointment, ?int $excludeId = null): ?JsonResponse
     {
+        $clinicHoursError = $this->clinicHoursValidator->validateAppointment($appointment);
+        if ($clinicHoursError !== null) {
+            return $this->json([
+                'error' => 'Conflict',
+                'message' => $clinicHoursError,
+            ], Response::HTTP_CONFLICT);
+        }
+
         // 1. Check Box status
         if ($appointment->getBox()->getEstado() !== 'disponible') {
             return $this->json([
@@ -306,7 +329,7 @@ class AppointmentController extends AbstractController
         if (!empty($dentistOverlaps)) {
             return $this->json([
                 'error' => 'Conflict',
-                'message' => 'The dentist is already occupied or does not have the required 5-minute gap between appointments.'
+                'message' => 'El odontólogo ya tiene otra cita en ese horario (se requiere al menos 5 minutos entre citas).'
             ], Response::HTTP_CONFLICT);
         }
 
@@ -323,7 +346,7 @@ class AppointmentController extends AbstractController
         if (!empty($boxOverlaps)) {
             return $this->json([
                 'error' => 'Conflict',
-                'message' => 'The box is already occupied during this time range.'
+                'message' => 'El box ya está ocupado en ese horario.'
             ], Response::HTTP_CONFLICT);
         }
 

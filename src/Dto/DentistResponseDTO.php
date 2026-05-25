@@ -9,6 +9,4 @@ class DentistResponseDTO
     public ?string $apellidos = null;
     public ?string $especialidad = null;
     public ?string $email = null;
-    /** @var array<int, string> */
-    public array $boxes = [];
 }

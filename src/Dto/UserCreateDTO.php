@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Dto;
-//s
+
 use Symfony\Component\Validator\Constraints as Assert;
 
 class UserCreateDTO
@@ -20,4 +20,13 @@ class UserCreateDTO
      * @var list<string>
      */
     public array $roles = [];
+
+    #[Assert\NotBlank]
+    public ?string $dentistNombre = null;
+
+    #[Assert\NotBlank]
+    public ?string $dentistApellidos = null;
+
+    #[Assert\NotBlank]
+    public ?string $dentistEspecialidad = null;
 }

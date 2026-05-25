@@ -2,6 +2,7 @@
 
 namespace App\Mapper;
 
+use App\Domain\Appointment\AppointmentKind;
 use App\Dto\AppointmentCreateDTO;
 use App\Dto\AppointmentResponseDTO;
 use App\Dto\AppointmentUpdateDTO;
@@ -9,13 +10,15 @@ use App\Entity\Appointment;
 use App\Repository\PatientRepository;
 use App\Repository\DentistRepository;
 use App\Repository\BoxRepository;
+use App\Repository\TreatmentRepository;
 
 class AppointmentMapper
 {
     public function __construct(
         private PatientRepository $patientRepository,
         private DentistRepository $dentistRepository,
-        private BoxRepository $boxRepository
+        private BoxRepository $boxRepository,
+        private TreatmentRepository $treatmentRepository
     ) {}
 
     public function toEntity(AppointmentCreateDTO $dto): Appointment
@@ -53,11 +56,36 @@ class AppointmentMapper
         if (property_exists($dto, 'duracion') && $dto->duracion !== null) {
             $appointment->setDuracion($dto->duracion);
         }
+        if (property_exists($dto, 'tiempo_limpieza') && $dto->tiempo_limpieza !== null) {
+            $appointment->setTiempoLimpieza($dto->tiempo_limpieza);
+        }
         if (property_exists($dto, 'prioridad') && $dto->prioridad !== null) {
             $appointment->setPrioridad($dto->prioridad);
         }
         if (property_exists($dto, 'estado') && $dto->estado !== null) {
             $appointment->setEstado($dto->estado);
+        }
+        if (property_exists($dto, 'appointment_kind') && $dto->appointment_kind !== null) {
+            $appointment->setAppointmentKind($dto->appointment_kind);
+            if ($dto->appointment_kind === AppointmentKind::URGENCIA) {
+                $appointment->setPrioridad('alta');
+            }
+        }
+        if (property_exists($dto, 'catalog_treatment_id')) {
+            if ($dto->catalog_treatment_id !== null) {
+                $catalog = $this->treatmentRepository->find($dto->catalog_treatment_id);
+                if ($catalog === null) {
+                    throw new \InvalidArgumentException('Treatment catalog entry not found.');
+                }
+                $appointment->setCatalogTreatment($catalog);
+                $appointment->setTreatment($catalog->getName());
+                if ($appointment->getDuracion() <= 0) {
+                    $cleaning = $appointment->getTiempoLimpieza();
+                    $appointment->setDuracion($catalog->getDefaultDurationMinutes() + $cleaning);
+                }
+            } else {
+                $appointment->setCatalogTreatment(null);
+            }
         }
         if (property_exists($dto, 'treatment') && $dto->treatment !== null) {
             $appointment->setTreatment($dto->treatment);
@@ -85,8 +113,16 @@ class AppointmentMapper
         $dto->fecha = $appointment->getFecha()?->format('Y-m-d');
         $dto->hora_inicio = $appointment->getHoraInicio()?->format('H:i:s');
         $dto->duracion = $appointment->getDuracion();
+        $dto->tiempo_limpieza = $appointment->getTiempoLimpieza();
+        $dto->duration = $dto->duracion;
+        $dto->cleaningTimeMinutes = $dto->tiempo_limpieza;
+        $dto->treatmentDurationMinutes = max(0, $dto->duracion - $dto->tiempo_limpieza);
         $dto->prioridad = $appointment->getPrioridad();
         $dto->estado = $appointment->getEstado();
+        $dto->appointment_kind = $appointment->getAppointmentKind();
+        $dto->catalog_treatment_id = $appointment->getCatalogTreatment()?->getId();
+        $dto->catalog_treatment_name = $appointment->getCatalogTreatment()?->getName();
+        $dto->specialty_name = $appointment->getCatalogTreatment()?->getDentistSpecialty()?->getName();
         $dto->treatment = $appointment->getTreatment();
         $dto->isInfectious = $appointment->getIsInfectious();
         $dto->notes = $appointment->getNotes();
@@ -98,6 +134,7 @@ class AppointmentMapper
         $dto->dentistName = $dto->odontologoNombre;
         $dto->status = $dto->estado;
         $dto->isInfectiousPatient = $dto->isInfectious;
+        $dto->patientMedicalFlags = $appointment->getPaciente()?->getMedicalFlags();
 
         // Generar startDateTime y endDateTime en formato ISO 8601
         if ($appointment->getFecha() && $appointment->getHoraInicio()) {

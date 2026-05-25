@@ -28,9 +28,11 @@ class UserController extends AbstractController
     ) {}
 
     #[Route('', name: 'app_user_list', methods: ['GET'])]
-    public function list(): JsonResponse
+    public function list(Request $request): JsonResponse
     {
-        $users = $this->userRepository->findAll();
+        $users = $request->query->getBoolean('clinicalProfiles')
+            ? $this->userRepository->findAllWithDentistProfile()
+            : $this->userRepository->findAll();
         $responseDtos = array_map(
             fn(User $user) => $this->userMapper->toResponseDto($user),
             $users
@@ -51,18 +53,15 @@ class UserController extends AbstractController
         UserPasswordHasherInterface $passwordHasher
     ): JsonResponse {
 
-        // Convertir DTO → Entidad
+        // DTO → entidad (sin contraseña; el mapper no hashea para evitar doble hash)
         $user = $this->userMapper->toEntity($userCreateDTO);
+        $user->setPassword($passwordHasher->hashPassword($user, $userCreateDTO->password));
 
-        // Hashear la contraseña (CRÍTICO)
-        $hashedPassword = $passwordHasher->hashPassword(
-            $user,
-            $userCreateDTO->password
-        );
-
-        $user->setPassword($hashedPassword);
-
-        // Guardar en BD
+        // Guardar ficha de odontólogo y usuario en una sola operación.
+        $dentist = $user->getDentist();
+        if ($dentist !== null && $dentist->getId() === null) {
+            $this->entityManager->persist($dentist);
+        }
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
@@ -74,9 +73,13 @@ class UserController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_user_update', methods: ['PUT', 'PATCH'])]
-    public function update(User $user, #[MapRequestPayload] UserUpdateDTO $userUpdateDTO): JsonResponse
+    public function update(Request $request, User $user, #[MapRequestPayload] UserUpdateDTO $userUpdateDTO): JsonResponse
     {
-        $user = $this->userMapper->updateEntity($user, $userUpdateDTO);
+        $raw = json_decode($request->getContent(), true);
+        $dentistIdInRequest = \is_array($raw)
+            && (\array_key_exists('dentistId', $raw) || \array_key_exists('dentist_id', $raw));
+
+        $user = $this->userMapper->updateEntity($user, $userUpdateDTO, $dentistIdInRequest);
 
         $this->entityManager->flush();
 

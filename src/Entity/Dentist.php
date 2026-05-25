@@ -35,12 +35,6 @@ class Dentist
     private ?string $email = null;
 
     /**
-     * @var Collection<int, Box>
-     */
-    #[ORM\OneToMany(mappedBy: 'dentist', targetEntity: Box::class)]
-    private Collection $boxes;
-
-    /**
      * @var Collection<int, Appointment>
      */
     #[ORM\OneToMany(mappedBy: 'odontologo', targetEntity: Appointment::class, orphanRemoval: true)]
@@ -48,7 +42,6 @@ class Dentist
 
     public function __construct()
     {
-        $this->boxes = new ArrayCollection();
         $this->appointments = new ArrayCollection();
     }
 
@@ -101,36 +94,6 @@ class Dentist
     public function setEmail(string $email): static
     {
         $this->email = $email;
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Box>
-     */
-    public function getBoxes(): Collection
-    {
-        return $this->boxes;
-    }
-
-    public function addBox(Box $box): static
-    {
-        if (!$this->boxes->contains($box)) {
-            $this->boxes->add($box);
-            $box->setDentist($this);
-        }
-
-        return $this;
-    }
-
-    public function removeBox(Box $box): static
-    {
-        if ($this->boxes->removeElement($box)) {
-            // set the owning side to null (unless already changed)
-            if ($box->getDentist() === $this) {
-                $box->setDentist(null);
-            }
-        }
 
         return $this;
     }

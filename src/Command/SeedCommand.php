@@ -8,6 +8,7 @@ use App\Entity\Dentist;
 use App\Entity\Box;
 use App\Entity\Appointment;
 use App\Entity\StockMaterial;
+use App\Entity\PedagogicalNotice;
 use App\Entity\ClinicalHistory;
 use App\Entity\Odontograma;
 use App\Entity\Patologia;
@@ -44,7 +45,7 @@ class SeedCommand extends Command
         
         // Disable foreign key checks to truncate/delete comfortably
         $conn->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
-        $tables = ['appointment', 'patologia', 'odontograma', 'radiografia', 'primera_visita', 'clinical_history', 'patient', 'dentist', 'box', 'stock_material', 'stock_restock', 'protocolo_tratamiento', 'user'];
+        $tables = ['appointment', 'patologia', 'odontograma', 'radiografia', 'primera_visita', 'clinical_history', 'patient', 'dentist', 'box', 'stock_material', 'stock_restock', 'protocolo_tratamiento', 'pedagogical_notice', 'user'];
         foreach ($tables as $table) {
             $conn->executeStatement('TRUNCATE TABLE ' . $table);
         }
@@ -55,6 +56,7 @@ class SeedCommand extends Command
             $usernames = ['admin', 'dentist1', 'dentist2', 'receptionist', 'staff'];
             $roles = [['ROLE_ADMIN'], ['ROLE_USER'], ['ROLE_USER'], ['ROLE_USER'], ['ROLE_USER']];
             
+            $adminUser = null;
             foreach ($usernames as $index => $username) {
                 $user = new User();
                 $user->setEmail($username . "@dentify.com");
@@ -62,6 +64,9 @@ class SeedCommand extends Command
                 $user->setRoles($roles[$index]);
                 $user->setPassword($this->passwordHasher->hashPassword($user, 'password123'));
                 $this->entityManager->persist($user);
+                if ($username === 'admin') {
+                    $adminUser = $user;
+                }
             }
             $io->text('Users seeded.');
 
@@ -85,7 +90,6 @@ class SeedCommand extends Command
                 $dentist->setApellidos("Apellido " . ($i + 1));
                 $dentist->setEspecialidad($specialties[$i]);
                 $dentist->setEmail($usernames[$i] . "@clinica.com");
-                $dentist->addBox($boxes[$i]);
                 $this->entityManager->persist($dentist);
                 $dentists[] = $dentist;
             }
@@ -167,6 +171,33 @@ class SeedCommand extends Command
                 $this->entityManager->persist($material);
             }
             $io->text('Stock materials persisted.');
+
+            // 7. Pedagogical notices (FE #21 notification center + admin banners)
+            $now = new \DateTimeImmutable();
+            $welcome = new PedagogicalNotice();
+            $welcome->setTitle('Bienvenida al simulador clínico');
+            $welcome->setBody('Revisa la agenda y el inventario. Los avisos del centro aparecerán aquí.');
+            $welcome->setActive(true);
+            $welcome->setPublishedAt($now->modify('-1 day'));
+            $welcome->setExpiresAt(null);
+            $welcome->setRequiresAck(true);
+            $welcome->setCreatedAt($now->modify('-1 day'));
+            $welcome->setUpdatedAt(null);
+            $welcome->setCreatedBy($adminUser);
+            $this->entityManager->persist($welcome);
+
+            $info = new PedagogicalNotice();
+            $info->setTitle('Recordatorio de práctica');
+            $info->setBody('Documenta cada intervención en la historia clínica del paciente.');
+            $info->setActive(true);
+            $info->setPublishedAt($now);
+            $info->setExpiresAt(null);
+            $info->setRequiresAck(false);
+            $info->setCreatedAt($now);
+            $info->setUpdatedAt(null);
+            $info->setCreatedBy($adminUser);
+            $this->entityManager->persist($info);
+            $io->text('Pedagogical notices seeded.');
 
             $io->note('Flushing to database...');
             $this->entityManager->flush();

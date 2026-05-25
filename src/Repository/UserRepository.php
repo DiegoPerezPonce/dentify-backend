@@ -33,6 +33,31 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
+    /** Usuario + odontólogo vinculado (para JWT recién emitido tras login/refresh). */
+    public function findForJwtPayload(int $id): ?User
+    {
+        return $this->createQueryBuilder('u')
+            ->addSelect('d')
+            ->leftJoin('u.dentist', 'd')
+            ->andWhere('u.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * @return User[]
+     */
+    public function findAllWithDentistProfile(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->addSelect('d')
+            ->innerJoin('u.dentist', 'd')
+            ->orderBy('u.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return User[] Returns an array of User objects
 //     */

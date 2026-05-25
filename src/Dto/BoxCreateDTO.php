@@ -13,7 +13,4 @@ class BoxCreateDTO
 
     #[Assert\NotBlank]
     public ?string $estado = 'disponible';
-
-    #[Assert\Positive]
-    public ?int $dentist_id = null;
 }

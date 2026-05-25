@@ -43,6 +43,10 @@ class Appointment
     #[Assert\NotBlank]
     private ?int $duracion = 30;
 
+    /** Minutos finales reservados para limpieza del box (incluidos en duracion). */
+    #[ORM\Column(options: ['default' => 5])]
+    private int $tiempo_limpieza = 5;
+
     #[ORM\Column(length: 20)]
     #[Assert\NotBlank]
     private ?string $prioridad = 'media';
@@ -50,6 +54,13 @@ class Appointment
     #[ORM\Column(length: 20)]
     #[Assert\NotBlank]
     private ?string $estado = 'programada';
+
+    #[ORM\Column(length: 32, options: ['default' => 'tratamiento'])]
+    private string $appointmentKind = 'tratamiento';
+
+    #[ORM\ManyToOne(targetEntity: Treatment::class)]
+    #[ORM\JoinColumn(name: 'catalog_treatment_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Treatment $catalogTreatment = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $treatment = null;
@@ -137,6 +148,18 @@ class Appointment
         return $this;
     }
 
+    public function getTiempoLimpieza(): int
+    {
+        return $this->tiempo_limpieza;
+    }
+
+    public function setTiempoLimpieza(int $tiempo_limpieza): static
+    {
+        $this->tiempo_limpieza = max(0, $tiempo_limpieza);
+
+        return $this;
+    }
+
     public function getPrioridad(): ?string
     {
         return $this->prioridad;
@@ -157,6 +180,30 @@ class Appointment
     public function setEstado(string $estado): static
     {
         $this->estado = $estado;
+
+        return $this;
+    }
+
+    public function getAppointmentKind(): string
+    {
+        return $this->appointmentKind;
+    }
+
+    public function setAppointmentKind(string $appointmentKind): static
+    {
+        $this->appointmentKind = $appointmentKind;
+
+        return $this;
+    }
+
+    public function getCatalogTreatment(): ?Treatment
+    {
+        return $this->catalogTreatment;
+    }
+
+    public function setCatalogTreatment(?Treatment $catalogTreatment): static
+    {
+        $this->catalogTreatment = $catalogTreatment;
 
         return $this;
     }

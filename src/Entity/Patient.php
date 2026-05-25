@@ -54,6 +54,17 @@ class Patient
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $datos_facturacion = null;
 
+    /** @var list<string>|null Etiquetas predefinidas (VIH, Hepatitis_B, …). */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $medical_flags = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $medical_notes = null;
+
+    /** Consentimiento RGPD y términos generales de la clínica firmados/aceptados. */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $terminos_generales_aceptados = false;
+
     /**
      * @var Collection<int, ClinicalHistory>
      */
@@ -219,6 +230,53 @@ class Patient
         $this->datos_facturacion = $datos_facturacion;
 
         return $this;
+    }
+
+    /**
+     * @return list<string>|null
+     */
+    public function getMedicalFlags(): ?array
+    {
+        return $this->medical_flags;
+    }
+
+    /**
+     * @param list<string>|null $medical_flags
+     */
+    public function setMedicalFlags(?array $medical_flags): static
+    {
+        $this->medical_flags = $medical_flags;
+
+        return $this;
+    }
+
+    public function getMedicalNotes(): ?string
+    {
+        return $this->medical_notes;
+    }
+
+    public function setMedicalNotes(?string $medical_notes): static
+    {
+        $this->medical_notes = $medical_notes;
+
+        return $this;
+    }
+
+    public function isTerminosGeneralesAceptados(): bool
+    {
+        return $this->terminos_generales_aceptados;
+    }
+
+    public function setTerminosGeneralesAceptados(bool $terminos_generales_aceptados): static
+    {
+        $this->terminos_generales_aceptados = $terminos_generales_aceptados;
+
+        return $this;
+    }
+
+    public function hasTerminosPendientes(): bool
+    {
+        return !$this->terminos_generales_aceptados;
     }
 
     /**

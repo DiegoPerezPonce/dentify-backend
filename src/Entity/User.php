@@ -2,7 +2,9 @@
 
 namespace App\Entity;
 
+use App\Domain\User\UiPreferences;
 use App\Repository\UserRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -32,6 +34,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(nullable: true)]
     private ?\DateTime $ultimo_acceso = null;
+
+    #[ORM\ManyToOne(targetEntity: Dentist::class)]
+    #[ORM\JoinColumn(name: 'dentist_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?Dentist $dentist = null;
+
+    /** @var array<string, mixed>|null Preferencias de tema / layout (por usuario). */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $ui_preferences = null;
 
     public function getId(): ?int
     {
@@ -112,6 +122,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUltimoAcceso(?\DateTime $ultimo_acceso): static
     {
         $this->ultimo_acceso = $ultimo_acceso;
+        return $this;
+    }
+
+    public function getDentist(): ?Dentist
+    {
+        return $this->dentist;
+    }
+
+    public function setDentist(?Dentist $dentist): static
+    {
+        $this->dentist = $dentist;
+
+        return $this;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getUiPreferencesRaw(): ?array
+    {
+        return $this->ui_preferences;
+    }
+
+    public function getUiPreferences(): UiPreferences
+    {
+        return UiPreferences::fromArray($this->ui_preferences);
+    }
+
+    public function setUiPreferences(UiPreferences $preferences): static
+    {
+        $this->ui_preferences = $preferences->toArray();
+
         return $this;
     }
 }

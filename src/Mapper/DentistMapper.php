@@ -6,7 +6,6 @@ use App\Dto\DentistCreateDTO;
 use App\Dto\DentistResponseDTO;
 use App\Dto\DentistUpdateDTO;
 use App\Entity\Dentist;
-use App\Entity\Box;
 
 class DentistMapper
 {
@@ -47,7 +46,6 @@ class DentistMapper
         $dto->apellidos = $dentist->getApellidos();
         $dto->especialidad = $dentist->getEspecialidad();
         $dto->email = $dentist->getEmail();
-        $dto->boxes = $dentist->getBoxes()->map(fn(Box $box) => $box->getNombre())->toArray();
 
         return $dto;
     }

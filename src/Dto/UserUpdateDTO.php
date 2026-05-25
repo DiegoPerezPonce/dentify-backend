@@ -17,4 +17,9 @@ class UserUpdateDTO
      * @var list<string>|null
      */
     public ?array $roles = null;
+
+    /** Odontólogo vinculado; null desvincula si el JSON incluye la clave. */
+    public int|string|null $dentistId = null;
+
+    public int|string|null $dentist_id = null;
 }
