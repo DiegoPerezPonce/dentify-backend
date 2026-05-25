@@ -90,7 +90,6 @@ class SeedCommand extends Command
                 $dentist->setApellidos("Apellido " . ($i + 1));
                 $dentist->setEspecialidad($specialties[$i]);
                 $dentist->setEmail($usernames[$i] . "@clinica.com");
-                $dentist->addBox($boxes[$i]);
                 $this->entityManager->persist($dentist);
                 $dentists[] = $dentist;
             }

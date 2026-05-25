@@ -2,6 +2,8 @@
 
 namespace App\Repository;
 
+use App\Domain\Appointment\AppointmentBlockingStatuses;
+use App\Domain\Appointment\AppointmentTimeRange;
 use App\Entity\Appointment;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -31,27 +33,33 @@ class AppointmentRepository extends ServiceEntityRepository
      */
     public function findOverlaps($dentist, $box, \DateTimeInterface $fecha, \DateTimeInterface $startTime, int $durationMinutes, ?int $excludeId = null, int $bufferMinutes = 0): array
     {
-        $newStart = clone $startTime;
-        /** @var \DateTime $newEnd */
-        $newEnd = clone $startTime;
-        $newEnd->modify("+$durationMinutes minutes");
+        if ($durationMinutes < 1) {
+            return [];
+        }
+
+        [$newStartMin, $newEndMin] = AppointmentTimeRange::rangeFromAppointmentStart($startTime, $durationMinutes);
 
         $qb = $this->createQueryBuilder('a')
             ->where('a.fecha = :fecha')
-            ->setParameter('fecha', $fecha->format('Y-m-d'));
+            ->andWhere('a.estado != :cancelled')
+            ->setParameter('fecha', $fecha->format('Y-m-d'))
+            ->setParameter('cancelled', AppointmentBlockingStatuses::CANCELLED);
 
         $orX = $qb->expr()->orX();
-        if ($dentist) {
+        if ($dentist !== null) {
             $orX->add('a.odontologo = :dentist');
             $qb->setParameter('dentist', $dentist);
         }
-        if ($box) {
+        if ($box !== null) {
             $orX->add('a.box = :box');
             $qb->setParameter('box', $box);
         }
+        if ($orX->count() === 0) {
+            return [];
+        }
         $qb->andWhere($orX);
 
-        if ($excludeId) {
+        if ($excludeId !== null) {
             $qb->andWhere('a.id != :excludeId')
                 ->setParameter('excludeId', $excludeId);
         }
@@ -59,24 +67,32 @@ class AppointmentRepository extends ServiceEntityRepository
         /** @var Appointment[] $appointments */
         $appointments = $qb->getQuery()->getResult();
 
-        return array_filter($appointments, function (Appointment $appointment) use ($newStart, $newEnd, $bufferMinutes) {
-            $existingStart = $appointment->getHoraInicio();
-            /** @var \DateTime $existingEnd */
-            $existingEnd = clone $existingStart;
-            $existingEnd->modify("+{$appointment->getDuracion()} minutes");
+        return array_values(array_filter(
+            $appointments,
+            static function (Appointment $appointment) use ($newStartMin, $newEndMin, $bufferMinutes): bool {
+                if (!AppointmentBlockingStatuses::isBlocking($appointment->getEstado())) {
+                    return false;
+                }
 
-            // Overlap condition with buffer: (StartA < EndB + buffer) AND (EndA > StartB - buffer)
-            // This ensures at least $bufferMinutes gap between appointments.
-            /** @var \DateTime $bufferedExistingEnd */
-            $bufferedExistingEnd = clone $existingEnd;
-            $bufferedExistingEnd->modify("+$bufferMinutes minutes");
-            
-            /** @var \DateTime $bufferedExistingStart */
-            $bufferedExistingStart = clone $existingStart;
-            $bufferedExistingStart->modify("-$bufferMinutes minutes");
+                $existingStart = $appointment->getHoraInicio();
+                if ($existingStart === null) {
+                    return false;
+                }
 
-            return ($newStart < $bufferedExistingEnd) && ($newEnd > $bufferedExistingStart);
-        });
+                [$existingStartMin, $existingEndMin] = AppointmentTimeRange::rangeFromAppointmentStart(
+                    $existingStart,
+                    $appointment->getDuracion()
+                );
+
+                return AppointmentTimeRange::rangesOverlap(
+                    $newStartMin,
+                    $newEndMin,
+                    $existingStartMin,
+                    $existingEndMin,
+                    $bufferMinutes
+                );
+            }
+        ));
     }
 
     /**
@@ -94,8 +110,10 @@ class AppointmentRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('a')
             ->where('a.fecha = :fecha')
             ->andWhere('a.hora_inicio > :startTime')
+            ->andWhere('a.estado != :cancelled')
             ->setParameter('fecha', $fecha->format('Y-m-d'))
-            ->setParameter('startTime', $startTime->format('H:i:s'));
+            ->setParameter('startTime', $startTime->format('H:i:s'))
+            ->setParameter('cancelled', AppointmentBlockingStatuses::CANCELLED);
 
         $orX = $qb->expr()->orX();
         if ($dentist) {

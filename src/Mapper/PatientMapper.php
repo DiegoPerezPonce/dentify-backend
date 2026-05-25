@@ -22,6 +22,9 @@ class PatientMapper
         $patient->setAlergias($dto->alergias);
         $patient->setHistorialClinico($dto->historial_clinico);
         $patient->setDatosFacturacion($dto->datos_facturacion);
+        $patient->setMedicalFlags($dto->medical_flags ?? null);
+        $patient->setMedicalNotes($dto->medical_notes);
+        $patient->setTerminosGeneralesAceptados($dto->terminos_generales_aceptados);
 
         return $patient;
     }
@@ -58,6 +61,15 @@ class PatientMapper
         if ($dto->datos_facturacion !== null) {
             $patient->setDatosFacturacion($dto->datos_facturacion);
         }
+        if ($dto->medical_flags !== null) {
+            $patient->setMedicalFlags($dto->medical_flags);
+        }
+        if ($dto->medical_notes !== null) {
+            $patient->setMedicalNotes($dto->medical_notes);
+        }
+        if ($dto->terminos_generales_aceptados !== null) {
+            $patient->setTerminosGeneralesAceptados($dto->terminos_generales_aceptados);
+        }
 
         return $patient;
     }
@@ -76,6 +88,10 @@ class PatientMapper
         $dto->alergias = $patient->getAlergias();
         $dto->historial_clinico = $patient->getHistorialClinico();
         $dto->datos_facturacion = $patient->getDatosFacturacion();
+        $dto->medical_flags = $patient->getMedicalFlags();
+        $dto->medical_notes = $patient->getMedicalNotes();
+        $dto->terminos_generales_aceptados = $patient->isTerminosGeneralesAceptados();
+        $dto->terminos_pendientes = $patient->hasTerminosPendientes();
 
         return $dto;
     }

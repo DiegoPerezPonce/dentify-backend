@@ -48,6 +48,8 @@ class BoxController extends AbstractController
     #[Route('', name: 'app_box_create', methods: ['POST'])]
     public function create(#[MapRequestPayload] BoxCreateDTO $boxCreateDTO): JsonResponse
     {
+        $this->assertNombreNotDuplicate($boxCreateDTO->nombre);
+
         try {
             $box = $this->boxMapper->toEntity($boxCreateDTO);
         } catch (\InvalidArgumentException $e) {
@@ -66,6 +68,10 @@ class BoxController extends AbstractController
     #[Route('/{id}', name: 'app_box_update', methods: ['PUT', 'PATCH'])]
     public function update(Box $box, #[MapRequestPayload] BoxUpdateDTO $boxUpdateDTO): JsonResponse
     {
+        if ($boxUpdateDTO->nombre !== null) {
+            $this->assertNombreNotDuplicate($boxUpdateDTO->nombre, $box->getId());
+        }
+
         try {
             $box = $this->boxMapper->updateEntity($box, $boxUpdateDTO);
         } catch (\InvalidArgumentException $e) {
@@ -84,5 +90,17 @@ class BoxController extends AbstractController
         $this->entityManager->flush();
 
         return $this->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    private function assertNombreNotDuplicate(?string $nombre, ?int $excludeId = null): void
+    {
+        $trimmed = trim((string) $nombre);
+        if ($trimmed === '') {
+            return;
+        }
+
+        if ($this->boxRepository->existsByNombre($trimmed, $excludeId)) {
+            throw new BadRequestHttpException('Ya existe un gabinete con ese nombre.');
+        }
     }
 }

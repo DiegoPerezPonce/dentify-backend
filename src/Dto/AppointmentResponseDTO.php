@@ -14,8 +14,13 @@ class AppointmentResponseDTO
     public ?string $fecha = null;
     public ?string $hora_inicio = null;
     public ?int $duracion = null;
+    public ?int $tiempo_limpieza = null;
     public ?string $prioridad = null;
     public ?string $estado = null;
+    public ?string $appointment_kind = null;
+    public ?int $catalog_treatment_id = null;
+    public ?string $catalog_treatment_name = null;
+    public ?string $specialty_name = null;
     public ?string $treatment = null;
     public bool $isInfectious = false;
     public ?string $notes = null;
@@ -29,4 +34,10 @@ class AppointmentResponseDTO
     public ?string $dentistName = null;
     public ?string $status = null;
     public ?bool $isInfectiousPatient = null;
+    public ?int $cleaningTimeMinutes = null;
+    public ?int $treatmentDurationMinutes = null;
+    public ?int $duration = null;
+
+    /** Etiquetas médicas del paciente (VIH, alergias, etc.) para alertas en agenda. */
+    public ?array $patientMedicalFlags = null;
 }

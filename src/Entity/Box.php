@@ -29,9 +29,6 @@ class Box
     #[Assert\NotBlank]
     private ?string $estado = 'disponible';
 
-    #[ORM\ManyToOne(inversedBy: 'boxes')]
-    private ?Dentist $dentist = null;
-
     /**
      * @var Collection<int, Appointment>
      */
@@ -80,18 +77,6 @@ class Box
     public function setEstado(string $estado): static
     {
         $this->estado = $estado;
-
-        return $this;
-    }
-
-    public function getDentist(): ?Dentist
-    {
-        return $this->dentist;
-    }
-
-    public function setDentist(?Dentist $dentist): static
-    {
-        $this->dentist = $dentist;
 
         return $this;
     }

@@ -2,6 +2,7 @@
 
 namespace App\Dto;
 
+use App\Domain\Appointment\AppointmentKind;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class AppointmentCreateDTO
@@ -26,11 +27,18 @@ class AppointmentCreateDTO
     #[Assert\NotBlank]
     public ?int $duracion = 30;
 
+    public int $tiempo_limpieza = 5;
+
     #[Assert\NotBlank]
     public ?string $prioridad = 'media';
 
     #[Assert\NotBlank]
     public ?string $estado = 'programada';
+
+    #[Assert\Choice(callback: [AppointmentKind::class, 'all'])]
+    public ?string $appointment_kind = 'tratamiento';
+
+    public ?int $catalog_treatment_id = null;
 
     public ?string $treatment = null;
 
