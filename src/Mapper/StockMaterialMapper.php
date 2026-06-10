@@ -9,10 +9,15 @@ use App\Entity\StockMaterial;
 
 class StockMaterialMapper
 {
+    private const DEFAULT_UMBRAL_MINIMO = 10.0;
+
     public function toEntity(StockMaterialCreateDTO $dto): StockMaterial
     {
         $entity = new StockMaterial();
         $this->mapDtoToEntity($dto, $entity);
+        if ($dto->umbral_minimo === null) {
+            $entity->setUmbralMinimo(self::DEFAULT_UMBRAL_MINIMO);
+        }
 
         return $entity;
     }
@@ -30,13 +35,13 @@ class StockMaterialMapper
             $entity->setNombre($dto->nombre);
         }
         if (property_exists($dto, 'cantidad_actual') && $dto->cantidad_actual !== null) {
-            $entity->setCantidadActual($dto->cantidad_actual);
+            $entity->setCantidadActual((float) max(0, (int) round($dto->cantidad_actual)));
         }
         if (property_exists($dto, 'unidad') && $dto->unidad !== null) {
             $entity->setUnidad($dto->unidad);
         }
         if (property_exists($dto, 'umbral_minimo') && $dto->umbral_minimo !== null) {
-            $entity->setUmbralMinimo($dto->umbral_minimo);
+            $entity->setUmbralMinimo((float) max(0, (int) round($dto->umbral_minimo)));
         }
         if (property_exists($dto, 'fecha_ultima_reposicion') && $dto->fecha_ultima_reposicion !== null) {
             $entity->setFechaUltimaReposicion(new \DateTime($dto->fecha_ultima_reposicion));
@@ -48,8 +53,8 @@ class StockMaterialMapper
         $dto = new StockMaterialResponseDTO();
         $dto->id = $entity->getId();
         $dto->nombre = $entity->getNombre();
-        $dto->cantidad_actual = $entity->getCantidadActual();
-        $umbral = $entity->getUmbralMinimo() ?? 10.0;
+        $dto->cantidad_actual = (float) (int) round($entity->getCantidadActual() ?? 0);
+        $umbral = (float) (int) round($entity->getUmbralMinimo() ?? 10);
         $dto->umbral_minimo = $umbral;
         $dto->is_low_stock = $entity->getCantidadActual() <= $umbral;
         $dto->unidad = $entity->getUnidad();

@@ -20,6 +20,7 @@ class AppointmentResponseDTO
     public ?string $appointment_kind = null;
     public ?int $catalog_treatment_id = null;
     public ?string $catalog_treatment_name = null;
+    public ?string $treatment_category_name = null;
     public ?string $specialty_name = null;
     public ?string $treatment = null;
     public bool $isInfectious = false;

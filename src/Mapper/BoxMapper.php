@@ -6,6 +6,7 @@ use App\Dto\BoxCreateDTO;
 use App\Dto\BoxResponseDTO;
 use App\Dto\BoxUpdateDTO;
 use App\Entity\Box;
+use App\Enum\BoxEstado;
 
 class BoxMapper
 {
@@ -14,7 +15,7 @@ class BoxMapper
         $box = new Box();
         $box->setNombre($dto->nombre);
         $box->setDescripcion($dto->descripcion);
-        $box->setEstado($dto->estado);
+        $box->setEstado(BoxEstado::normalize($dto->estado));
 
         return $box;
     }
@@ -28,7 +29,7 @@ class BoxMapper
             $box->setDescripcion($dto->descripcion);
         }
         if ($dto->estado !== null) {
-            $box->setEstado($dto->estado);
+            $box->setEstado(BoxEstado::normalize($dto->estado));
         }
 
         return $box;
@@ -40,7 +41,7 @@ class BoxMapper
         $dto->id = $box->getId();
         $dto->nombre = $box->getNombre();
         $dto->descripcion = $box->getDescripcion();
-        $dto->estado = $box->getEstado();
+        $dto->estado = BoxEstado::normalize($box->getEstado());
 
         return $dto;
     }

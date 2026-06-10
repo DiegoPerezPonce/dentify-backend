@@ -15,4 +15,24 @@ class ProtocoloTratamientoRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, ProtocoloTratamiento::class);
     }
+
+    /**
+     * @return ProtocoloTratamiento[]
+     */
+    public function findByTreatmentName(string $treatmentName): array
+    {
+        $needle = mb_strtolower(trim($treatmentName));
+        if ($needle === '') {
+            return [];
+        }
+
+        return $this->createQueryBuilder('p')
+            ->addSelect('m')
+            ->innerJoin('p.material', 'm')
+            ->andWhere('LOWER(TRIM(p.nombre_tratamiento)) = :name')
+            ->setParameter('name', $needle)
+            ->orderBy('p.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
