@@ -17,7 +17,7 @@ class StockMaterialCreateDTO
     public ?string $unidad = null;
 
     #[Assert\PositiveOrZero]
-    public ?float $umbral_minimo = null;
+    public ?float $umbral_minimo = 10.0;
 
     public ?string $fecha_ultima_reposicion = null;
 }

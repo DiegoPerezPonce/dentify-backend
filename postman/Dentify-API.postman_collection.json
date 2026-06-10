@@ -1,0 +1,4273 @@
+{
+  "info": {
+    "name": "Dentify API",
+    "description": "Batería de pruebas funcionales de la API REST Dentify (Symfony).\n\n1. Importar entorno **Dentify Local**\n2. Ejecutar **Login (éxito)**\n3. Ejecutar **Setup - Obtener IDs** o Run collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Auth",
+      "description": "Autenticación JWT",
+      "item": [
+        {
+          "name": "Login (éxito)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "description": "Obtiene JWT y lo guarda en la variable `jwt`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{login}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Token presente', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "  pm.environment.set('jwt', json.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (credenciales inválidas)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"noexiste\",\n  \"password\": \"wrong\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Setup (IDs)",
+      "description": "Rellena variables de entorno desde listados",
+      "item": [
+        {
+          "name": "Listar pacientes → patientId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients?page=1&itemsPerPage=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.unset('saveIdAs');",
+                  "pm.variables.set('saveFirstItemIdAs', 'patientId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar odontólogos → dentistId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dentists?page=1&itemsPerPage=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dentists"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.unset('saveIdAs');",
+                  "pm.variables.set('saveFirstItemIdAs', 'dentistId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar cajas → boxId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/boxes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "boxes"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.unset('saveIdAs');",
+                  "pm.variables.set('saveFirstItemIdAs', 'boxId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar citas → appointmentId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments?startDate=2026-01-01&endDate=2026-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01",
+                  "disabled": false
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.unset('saveIdAs');",
+                  "pm.variables.set('saveFirstItemIdAs', 'appointmentId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar materiales → stockMaterialId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-materials?page=1&itemsPerPage=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-materials"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.unset('saveIdAs');",
+                  "pm.variables.set('saveFirstItemIdAs', 'stockMaterialId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar categorías → treatmentCategoryId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/treatment-categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "treatment-categories"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.unset('saveIdAs');",
+                  "pm.variables.set('saveFirstItemIdAs', 'treatmentCategoryId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar especialidades → specialtyId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/specialties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "specialties"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.unset('saveIdAs');",
+                  "pm.variables.set('saveFirstItemIdAs', 'specialtyId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Pacientes",
+      "description": "CRUD y recursos anidados",
+      "item": [
+        {
+          "name": "GET Listar (paginado)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients?page=1&itemsPerPage=10&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "10",
+                  "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients/{{patientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients",
+                "{{patientId}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Historial clínico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients/{{patientId}}/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients",
+                "{{patientId}}",
+                "history"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Citas del paciente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients/{{patientId}}/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients",
+                "{{patientId}}",
+                "appointments"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Odontogramas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients/{{patientId}}/odontogramas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients",
+                "{{patientId}}",
+                "odontogramas"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear paciente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ]
+            },
+            "description": "DNI y email únicos en cada ejecución (evita duplicados).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"María\",\n  \"apellidos\": \"Prueba Postman\",\n  \"dni\": \"{{citaPatientDni}}\",\n  \"telefono\": \"612345678\",\n  \"email\": \"maria.{{uniqueSuffix}}@dentify.test\",\n  \"terminos_generales_aceptados\": true\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = String(Date.now());",
+                  "pm.environment.set('uniqueSuffix', u);",
+                  "pm.environment.set('citaPatientDni', u.slice(-8) + 'Z');",
+                  "pm.variables.set('saveIdAs', 'patientId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH Actualizar paciente",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients/{{patientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients",
+                "{{patientId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"telefono\": \"699887766\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Paciente",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients/{{patientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients",
+                "{{patientId}}"
+              ]
+            },
+            "description": "Puede fallar si tiene citas vinculadas. Ejecutar al final de la carpeta. Usa el ID de POST Crear de esta misma carpeta (variable de entorno)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204 o 404 (ya eliminado)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Citas",
+      "description": "Gestión de citas. Si borraste el paciente (carpeta 02), ejecuta primero «POST Crear paciente (prerequisito)».",
+      "item": [
+        {
+          "name": "POST Crear paciente (prerequisito)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ]
+            },
+            "description": "Crea paciente con DNI único. Necesario si patientId no existe.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Paciente\",\n  \"apellidos\": \"Prueba API\",\n  \"dni\": \"{{citaPatientDni}}\",\n  \"telefono\": \"612345678\",\n  \"email\": \"paciente.{{uniqueSuffix}}@dentify.test\",\n  \"terminos_generales_aceptados\": true\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = String(Date.now());",
+                  "pm.environment.set('uniqueSuffix', u);",
+                  "pm.environment.set('citaPatientDni', u.slice(-8) + 'Z');",
+                  "pm.variables.set('saveIdAs', 'patientId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear cita (prerequisito)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "description": "Crea cita programada. Guarda appointmentId para la sesión.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pacienteId\": {{patientId}},\n  \"odontologoId\": {{dentistId}},\n  \"boxId\": {{boxId}},\n  \"fecha\": \"{{citaFecha}}\",\n  \"hora_inicio\": \"{{citaHora}}\",\n  \"duracion\": 30,\n  \"tiempo_limpieza\": 5,\n  \"prioridad\": \"media\",\n  \"estado\": \"programada\",\n  \"appointment_kind\": \"tratamiento\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const required = [\"patientId\",\"dentistId\",\"boxId\"];",
+                  "required.forEach((key) => {",
+                  "  const v = pm.environment.get(key);",
+                  "  if (v === undefined || v === null || String(v).trim() === '') {",
+                  "    throw new Error('Ejecuta 01 - Setup (odontólogo/caja) antes. Variable vacía: ' + key);",
+                  "  }",
+                  "});",
+                  "const d = new Date();",
+                  "d.setDate(d.getDate() + 1);",
+                  "d.setHours(11, 0, 0, 0);",
+                  "pm.environment.set('citaFecha', d.toISOString().slice(0, 10));",
+                  "pm.environment.set('citaHora', '11:00:00');",
+                  "pm.environment.set('citaStartDateTime', pm.environment.get('citaFecha') + 'T11:00:00');",
+                  "pm.variables.set('saveIdAs', 'appointmentId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Listar por rango",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments?startDate=2026-01-01&endDate=2026-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01",
+                  "disabled": false
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointmentId}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear cita",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "description": "Requiere patientId, dentistId y boxId válidos. Fecha/hora se generan automáticamente (mañana 11:00).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pacienteId\": {{patientId}},\n  \"odontologoId\": {{dentistId}},\n  \"boxId\": {{boxId}},\n  \"fecha\": \"{{citaFecha}}\",\n  \"hora_inicio\": \"{{citaHora}}\",\n  \"duracion\": 30,\n  \"tiempo_limpieza\": 5,\n  \"prioridad\": \"media\",\n  \"estado\": \"programada\",\n  \"appointment_kind\": \"tratamiento\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const required = [\"patientId\",\"dentistId\",\"boxId\"];",
+                  "required.forEach((key) => {",
+                  "  const v = pm.environment.get(key);",
+                  "  if (v === undefined || v === null || String(v).trim() === '') {",
+                  "    throw new Error('Ejecuta 01 - Setup y/o POST Crear paciente (prerequisito). Variable vacía: ' + key);",
+                  "  }",
+                  "});",
+                  "const d = new Date();",
+                  "d.setDate(d.getDate() + 1);",
+                  "d.setHours(11, 0, 0, 0);",
+                  "pm.environment.set('citaFecha', d.toISOString().slice(0, 10));",
+                  "pm.environment.set('citaHora', '11:00:00');",
+                  "pm.environment.set('citaStartDateTime', pm.environment.get('citaFecha') + 'T11:00:00');",
+                  "pm.variables.set('saveIdAs', 'appointmentId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH Actualizar cita",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointmentId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Actualizado desde Postman\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT Cancelar cita",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointmentId}}",
+                "cancel"
+              ]
+            },
+            "description": "Solo si la cita está en estado cancelable.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Cita",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointmentId}}"
+              ]
+            },
+            "description": "Ejecutar al final de la carpeta. Usa el ID de POST Crear de esta misma carpeta (variable de entorno)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204 o 404 (ya eliminado)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Sesión de cita",
+      "description": "Orden obligatorio: prerequisitos → Iniciar → GET → Añadir material → (opcional DELETE línea) → Completar. No uses una cita ya borrada ni una sesión ya completada.",
+      "item": [
+        {
+          "name": "POST Crear paciente (prerequisito)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ]
+            },
+            "description": "Crea paciente con DNI único. Necesario si patientId no existe.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Paciente\",\n  \"apellidos\": \"Prueba API\",\n  \"dni\": \"{{citaPatientDni}}\",\n  \"telefono\": \"612345678\",\n  \"email\": \"paciente.{{uniqueSuffix}}@dentify.test\",\n  \"terminos_generales_aceptados\": true\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = String(Date.now());",
+                  "pm.environment.set('uniqueSuffix', u);",
+                  "pm.environment.set('citaPatientDni', u.slice(-8) + 'Z');",
+                  "pm.variables.set('saveIdAs', 'patientId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear cita (prerequisito)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "description": "Crea cita programada. Guarda appointmentId para la sesión.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pacienteId\": {{patientId}},\n  \"odontologoId\": {{dentistId}},\n  \"boxId\": {{boxId}},\n  \"fecha\": \"{{citaFecha}}\",\n  \"hora_inicio\": \"{{citaHora}}\",\n  \"duracion\": 30,\n  \"tiempo_limpieza\": 5,\n  \"prioridad\": \"media\",\n  \"estado\": \"programada\",\n  \"appointment_kind\": \"tratamiento\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const required = [\"patientId\",\"dentistId\",\"boxId\"];",
+                  "required.forEach((key) => {",
+                  "  const v = pm.environment.get(key);",
+                  "  if (v === undefined || v === null || String(v).trim() === '') {",
+                  "    throw new Error('Ejecuta 01 - Setup (odontólogo/caja) antes. Variable vacía: ' + key);",
+                  "  }",
+                  "});",
+                  "const d = new Date();",
+                  "d.setDate(d.getDate() + 1);",
+                  "d.setHours(11, 0, 0, 0);",
+                  "pm.environment.set('citaFecha', d.toISOString().slice(0, 10));",
+                  "pm.environment.set('citaHora', '11:00:00');",
+                  "pm.environment.set('citaStartDateTime', pm.environment.get('citaFecha') + 'T11:00:00');",
+                  "pm.variables.set('saveIdAs', 'appointmentId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Iniciar sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/session/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointmentId}}",
+                "session",
+                "start"
+              ]
+            },
+            "description": "Crea la sesión clínica (201). Debe ejecutarse antes del GET Estado sesión."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const required = [\"appointmentId\"];",
+                  "required.forEach((key) => {",
+                  "  const v = pm.environment.get(key);",
+                  "  if (v === undefined || v === null || String(v).trim() === '') {",
+                  "    throw new Error('Ejecuta POST Crear cita (prerequisito) antes. Variable vacía: ' + key);",
+                  "  }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Sesión in_progress', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('in_progress');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Estado sesión",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointmentId}}",
+                "session"
+              ]
+            },
+            "description": "Solo funciona después de POST Iniciar sesión."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const required = [\"appointmentId\"];",
+                  "required.forEach((key) => {",
+                  "  const v = pm.environment.get(key);",
+                  "  if (v === undefined || v === null || String(v).trim() === '') {",
+                  "    throw new Error('Falta appointmentId. Variable vacía: ' + key);",
+                  "  }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sesión con materiales array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.materials).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Añadir material",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/session/materials",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointmentId}}",
+                "session",
+                "materials"
+              ]
+            },
+            "description": "Requiere sesión iniciada y stockMaterialId válido (01 - Setup).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stock_material_id\": {{stockMaterialId}},\n  \"cantidad_usada\": 1\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const required = [\"appointmentId\",\"stockMaterialId\"];",
+                  "required.forEach((key) => {",
+                  "  const v = pm.environment.get(key);",
+                  "  if (v === undefined || v === null || String(v).trim() === '') {",
+                  "    throw new Error('Ejecuta 01 - Setup y POST Iniciar sesión. Variable vacía: ' + key);",
+                  "  }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (Array.isArray(json.materials) && json.materials.length > 0) {",
+                  "    const last = json.materials[json.materials.length - 1];",
+                  "    if (last.id != null) pm.environment.set('sessionMaterialLineId', String(last.id));",
+                  "  }",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Línea material",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/session/materials/{{sessionMaterialLineId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointmentId}}",
+                "session",
+                "materials",
+                "{{sessionMaterialLineId}}"
+              ]
+            },
+            "description": "Opcional. Antes de Completar. Omite si no añadiste material manual."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const required = [\"appointmentId\"];",
+                  "required.forEach((key) => {",
+                  "  const v = pm.environment.get(key);",
+                  "  if (v === undefined || v === null || String(v).trim() === '') {",
+                  "    throw new Error('Falta appointmentId. Variable vacía: ' + key);",
+                  "  }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 o 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Completar sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/session/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "{{appointmentId}}",
+                "session",
+                "complete"
+              ]
+            },
+            "description": "Cierra la sesión y descuenta stock. La cita pasa a completada."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const required = [\"appointmentId\"];",
+                  "required.forEach((key) => {",
+                  "  const v = pm.environment.get(key);",
+                  "  if (v === undefined || v === null || String(v).trim() === '') {",
+                  "    throw new Error('Falta appointmentId. Variable vacía: ' + key);",
+                  "  }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Sesión completada', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('completed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Odontólogos",
+      "description": null,
+      "item": [
+        {
+          "name": "GET Listar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dentists?page=1&itemsPerPage=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dentists"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dentists/{{dentistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dentists",
+                "{{dentistId}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dentists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dentists"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ana\",\n  \"apellidos\": \"Postman Test\",\n  \"especialidad\": \"General\",\n  \"email\": \"dentist.{{uniqueSuffix}}@dentify.test\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = String(Date.now());",
+                  "pm.environment.set('uniqueSuffix', u);",
+                  "pm.environment.set('citaPatientDni', u.slice(-8) + 'Z');",
+                  "pm.variables.set('saveIdAs', 'dentistId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Odontólogo",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dentists/{{dentistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dentists",
+                "{{dentistId}}"
+              ]
+            },
+            "description": "Puede fallar si está vinculado a un usuario. Ejecutar al final de la carpeta. Usa el ID de POST Crear de esta misma carpeta (variable de entorno)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204 o 404 (ya eliminado)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 - Cajas",
+      "description": null,
+      "item": [
+        {
+          "name": "GET Listar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/boxes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "boxes"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/boxes/{{boxId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "boxes",
+                "{{boxId}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/boxes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "boxes"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Box Postman {{uniqueSuffix}}\",\n  \"descripcion\": \"Creada en prueba API\",\n  \"estado\": \"disponible\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = String(Date.now());",
+                  "pm.environment.set('uniqueSuffix', u);",
+                  "pm.environment.set('citaPatientDni', u.slice(-8) + 'Z');",
+                  "pm.variables.set('saveIdAs', 'boxId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Caja",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/boxes/{{boxId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "boxes",
+                "{{boxId}}"
+              ]
+            },
+            "description": "Ejecutar al final de la carpeta. Usa el ID de POST Crear de esta misma carpeta (variable de entorno)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204 o 404 (ya eliminado)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 - Stock",
+      "description": "Materiales y reposiciones",
+      "item": [
+        {
+          "name": "GET Listar materiales",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-materials?page=1&itemsPerPage=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-materials"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Material por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-materials/{{stockMaterialId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-materials",
+                "{{stockMaterialId}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear material",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-materials",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-materials"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Material Postman {{uniqueSuffix}}\",\n  \"cantidad_actual\": 100,\n  \"unidad\": \"uds\",\n  \"umbral_minimo\": 10\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = String(Date.now());",
+                  "pm.environment.set('uniqueSuffix', u);",
+                  "pm.environment.set('citaPatientDni', u.slice(-8) + 'Z');",
+                  "pm.variables.set('saveIdAs', 'stockMaterialId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT Añadir stock",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-materials/{{stockMaterialId}}/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-materials",
+                "{{stockMaterialId}}",
+                "add"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 5\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Reposiciones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-restocks?page=1&itemsPerPage=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-restocks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear reposición",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-restocks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-restocks"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"material_id\": {{stockMaterialId}},\n  \"cantidad_recibida\": 50,\n  \"proveedor\": \"Proveedor Postman\",\n  \"fecha\": \"2026-06-02\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set('saveIdAs', 'restockId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Material",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock-materials/{{stockMaterialId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stock-materials",
+                "{{stockMaterialId}}"
+              ]
+            },
+            "description": "Ejecutar al final de la carpeta. Usa el ID de POST Crear de esta misma carpeta (variable de entorno)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204 o 404 (ya eliminado)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08 - Protocolos",
+      "description": null,
+      "item": [
+        {
+          "name": "GET Listar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/protocolos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "protocolos"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear protocolo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/protocolos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "protocolos"
+              ]
+            },
+            "description": "Ejecutar POST Crear material antes o usar stockMaterialId del Setup.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre_tratamiento\": \"Limpieza Postman {{uniqueSuffix}}\",\n  \"material_id\": {{stockMaterialId}},\n  \"cantidad_necesaria\": 2,\n  \"notas_paso_a_paso\": \"Paso de prueba\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = String(Date.now());",
+                  "pm.environment.set('uniqueSuffix', u);",
+                  "pm.environment.set('citaPatientDni', u.slice(-8) + 'Z');",
+                  "const required = [\"stockMaterialId\"];",
+                  "required.forEach((key) => {",
+                  "  const v = pm.environment.get(key);",
+                  "  if (v === undefined || v === null || String(v).trim() === '') {",
+                  "    throw new Error('Ejecuta 01 - Setup o POST Crear material. Variable vacía: ' + key);",
+                  "  }",
+                  "});",
+                  "pm.variables.set('saveIdAs', 'protocoloId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/protocolos/{{protocoloId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "protocolos",
+                "{{protocoloId}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Protocolo",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/protocolos/{{protocoloId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "protocolos",
+                "{{protocoloId}}"
+              ]
+            },
+            "description": "Ejecutar al final de la carpeta. Usa el ID de POST Crear de esta misma carpeta (variable de entorno)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204 o 404 (ya eliminado)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "09 - Usuarios",
+      "description": "Orden: Listar → Crear (email/usuario únicos) → GET por ID → DELETE. No borrar testuser.",
+      "item": [
+        {
+          "name": "GET Listar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "description": "Email y nombre_usuario únicos en cada ejecución. Guarda userId para GET y DELETE.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user.{{uniqueSuffix}}@dentify.test\",\n  \"password\": \"123456\",\n  \"nombre_usuario\": \"postman_{{uniqueSuffix}}\",\n  \"roles\": [\"ROLE_USER\"],\n  \"dentistNombre\": \"Usuario\",\n  \"dentistApellidos\": \"Postman\",\n  \"dentistEspecialidad\": \"General\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = String(Date.now());",
+                  "pm.environment.set('uniqueSuffix', u);",
+                  "pm.environment.set('citaPatientDni', u.slice(-8) + 'Z');",
+                  "pm.variables.set('saveIdAs', 'userId');",
+                  "pm.variables.unset('saveFirstItemIdAs');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Usa userId del POST Crear de esta carpeta (no testuser)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const required = [\"userId\"];",
+                  "required.forEach((key) => {",
+                  "  const v = pm.environment.get(key);",
+                  "  if (v === undefined || v === null || String(v).trim() === '') {",
+                  "    throw new Error('Ejecuta POST Crear usuario antes. Variable vacía: ' + key);",
+                  "  }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Usuario",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Solo el usuario recién creado. Nunca testuser. Ejecutar al final de la carpeta. Usa el ID de POST Crear de esta misma carpeta (variable de entorno)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204 o 404 (ya eliminado)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10 - Catálogo clínico",
+      "description": null,
+      "item": [
+        {
+          "name": "GET Especialidades",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/specialties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "specialties"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Categorías tratamiento",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/treatment-categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "treatment-categories"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Tratamientos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/treatments?page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "treatments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crear tratamiento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/treatments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "treatments"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tratamiento Postman {{uniqueSuffix}}\",\n  \"categoryId\": {{treatmentCategoryId}},\n  \"dentistSpecialtyId\": {{specialtyId}},\n  \"defaultDurationMinutes\": 45,\n  \"allowsUrgency\": true,\n  \"forFirstVisit\": false\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = String(Date.now());",
+                  "pm.environment.set('uniqueSuffix', u);",
+                  "pm.environment.set('citaPatientDni', u.slice(-8) + 'Z');",
+                  "const required = [\"treatmentCategoryId\",\"specialtyId\"];",
+                  "required.forEach((key) => {",
+                  "  const v = pm.environment.get(key);",
+                  "  if (v === undefined || v === null || String(v).trim() === '') {",
+                  "    throw new Error('Ejecuta 01 - Setup. Variable vacía: ' + key);",
+                  "  }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "11 - Agenda",
+      "description": null,
+      "item": [
+        {
+          "name": "GET Horario clínica",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/clinic",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "clinic"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Odontólogos disponibles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/dentists-available?startDateTime={{citaStartDateTime}}&duration=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "dentists-available"
+              ],
+              "query": [
+                {
+                  "key": "startDateTime",
+                  "value": "{{citaStartDateTime}}",
+                  "disabled": false
+                },
+                {
+                  "key": "duration",
+                  "value": "30",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Parámetros alineados con Angular: startDateTime (ISO) y duration (minutos). Lista vacía si el odontólogo no tiene turno semanal o hay solape de citas."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = new Date();",
+                  "d.setDate(d.getDate() + 1);",
+                  "d.setHours(11, 0, 0, 0);",
+                  "pm.environment.set('citaFecha', d.toISOString().slice(0, 10));",
+                  "pm.environment.set('citaHora', '11:00:00');",
+                  "pm.environment.set('citaStartDateTime', pm.environment.get('citaFecha') + 'T11:00:00');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Respuesta con dentistIds', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.dentistIds).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Cajas disponibles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/boxes-available?startDateTime={{citaStartDateTime}}&duration=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "boxes-available"
+              ],
+              "query": [
+                {
+                  "key": "startDateTime",
+                  "value": "{{citaStartDateTime}}",
+                  "disabled": false
+                },
+                {
+                  "key": "duration",
+                  "value": "30",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Mismos parámetros que dentists-available: startDateTime y duration."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = new Date();",
+                  "d.setDate(d.getDate() + 1);",
+                  "d.setHours(11, 0, 0, 0);",
+                  "pm.environment.set('citaFecha', d.toISOString().slice(0, 10));",
+                  "pm.environment.set('citaHora', '11:00:00');",
+                  "pm.environment.set('citaStartDateTime', pm.environment.get('citaFecha') + 'T11:00:00');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Respuesta con boxIds', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.boxIds).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Horario semanal odontólogo (por ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/dentists/{{dentistId}}/weekly",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "dentists",
+                "{{dentistId}}",
+                "weekly"
+              ]
+            },
+            "description": "Horario semanal de un odontólogo concreto. Uso habitual con testuser (admin). Requiere dentistId del Setup o de Gestión de odontólogos."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Mi horario semanal",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/me/weekly",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "me",
+                "weekly"
+              ]
+            },
+            "description": "Solo funciona si el usuario autenticado tiene ficha de odontólogo vinculada. Con testuser (admin sin dentist_id) devuelve 403 — comportamiento correcto. Para probar como admin, usa «Horario semanal odontólogo (por ID)» o haz login con un usuario odontólogo."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 o 403 según tipo de usuario', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "});",
+                  "if (pm.response.code === 403) {",
+                  "  pm.test('403 esperado si el usuario no tiene ficha odontólogo', () => {",
+                  "    pm.expect(pm.response.text()).to.include('No dentist profile');",
+                  "  });",
+                  "} else {",
+                  "  pm.test('Respuesta con horario semanal', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('object');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "12 - Me y otros",
+      "description": null,
+      "item": [
+        {
+          "name": "GET Mis preferencias",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/me/preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "preferences"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH Mis preferencias",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/me/preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "preferences"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheme\": \"light\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Primera visita",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/primera-visita",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "primera-visita"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_id\": {{patientId}},\n  \"motivo_consulta\": \"Dolor molar superior derecho desde hace 3 días\",\n  \"nivel_dolor\": 6,\n  \"observaciones\": \"Prueba Postman\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id != null) {",
+                  "      const varName = pm.variables.get('saveIdAs');",
+                  "      if (varName) pm.environment.set(varName, String(json.id));",
+                  "    }",
+                  "    const listVar = pm.variables.get('saveFirstItemIdAs');",
+                  "    if (listVar) {",
+                  "      if (Array.isArray(json.items) && json.items.length > 0 && json.items[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json.items[0].id));",
+                  "      } else if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "        pm.environment.set(listVar, String(json[0].id));",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Avisos pedagógicos (manage)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pedagogical-notices/manage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pedagogical-notices",
+                "manage"
+              ]
+            },
+            "description": "Lista admin; guarda pedagogicalNoticeId para el DELETE de esta carpeta."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (Array.isArray(json) && json.length > 0 && json[0].id != null) {",
+                  "    pm.environment.set('pedagogicalNoticeId', String(json[0].id));",
+                  "  }",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Aviso pedagógico",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pedagogical-notices/{{pedagogicalNoticeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pedagogical-notices",
+                "{{pedagogicalNoticeId}}"
+              ]
+            },
+            "description": "Requiere ROLE_ADMIN. Crear aviso antes o usar ID del GET manage. Ejecutar al final de la carpeta. Usa el ID de POST Crear de esta misma carpeta (variable de entorno)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204 o 404 (ya eliminado)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "99 - Pruebas negativas",
+      "description": "Seguridad y validación",
+      "item": [
+        {
+          "name": "GET Pacientes sin token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401 sin token', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Paciente body inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"apellidos\": \"\",\n  \"dni\": \"\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Error de validación (4xx)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Cita sin campos obligatorios",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Error de validación (4xx)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE Recurso inexistente",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patients",
+                "999999"
+              ]
+            },
+            "description": "ID que no existe en la BBDD."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

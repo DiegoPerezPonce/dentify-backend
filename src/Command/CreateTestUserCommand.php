@@ -3,47 +3,65 @@
 namespace App\Command;
 
 use App\Entity\User;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
+#[AsCommand(
+    name: 'app:create-test-user',
+    description: 'Crea o restaura el usuario admin testuser (login: testuser, password: 123456).',
+)]
 class CreateTestUserCommand extends Command
 {
-    // Ya no necesitamos $defaultName estático
-    protected static $defaultDescription = 'Crea un usuario de prueba para JWT';
-
-    private EntityManagerInterface $em;
-    private UserPasswordHasherInterface $passwordHasher;
-
-    public function __construct(EntityManagerInterface $em, UserPasswordHasherInterface $passwordHasher)
-    {
-        // Pasamos el nombre del comando directamente al constructor del padre
-        parent::__construct('app:create-test-user');
-
-        $this->em = $em;
-        $this->passwordHasher = $passwordHasher;
+    public function __construct(
+        private EntityManagerInterface $em,
+        private UserPasswordHasherInterface $passwordHasher,
+        private UserRepository $userRepository,
+    ) {
+        parent::__construct();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        // Crear usuario de prueba
-        $user = new User();
-        $user->setEmail('test@ejemplo.com');
-        $user->setUsername('TestUser');
-        $user->setRoles(['ROLE_USER']);
+        $io = new SymfonyStyle($input, $output);
 
-        // Hashear la contraseña
-        $hashedPassword = $this->passwordHasher->hashPassword($user, '123456');
-        $user->setPassword($hashedPassword);
+        $username = 'testuser';
+        $email = 'test@ejemplo.com';
+        $password = '123456';
 
-        // Guardar en la base de datos
+        $user = $this->userRepository->findOneBy(['username' => $username])
+            ?? $this->userRepository->findOneBy(['email' => $email]);
+
+        if ($user === null) {
+            $user = new User();
+            $user->setEmail($email);
+            $user->setUsername($username);
+            $io->text('Creando usuario nuevo…');
+        } else {
+            $io->text('Usuario existente: restableciendo contraseña y roles…');
+            $user->setUsername($username);
+            $user->setEmail($email);
+        }
+
+        $user->setRoles(['ROLE_ADMIN', 'ROLE_USER']);
+        $user->setPassword($this->passwordHasher->hashPassword($user, $password));
+
         $this->em->persist($user);
         $this->em->flush();
 
-        $output->writeln('✅ Usuario de prueba creado correctamente!');
-        $output->writeln('Email: test@ejemplo.com | Password: 123456');
+        $io->success('Usuario testuser listo.');
+        $io->listing([
+            'Login (usuario): testuser',
+            'Login (email): test@ejemplo.com',
+            'Contraseña: 123456',
+            'Roles: ROLE_ADMIN, ROLE_USER',
+        ]);
+        $io->note('Si sigues con error en el navegador, cierra sesión o borra auth_token en localStorage y vuelve a entrar.');
 
         return Command::SUCCESS;
     }

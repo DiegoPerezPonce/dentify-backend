@@ -39,13 +39,25 @@ class AppointmentMapper
     private function mapDtoToEntity($dto, Appointment $appointment): void
     {
         if (property_exists($dto, 'pacienteId') && $dto->pacienteId !== null) {
-            $appointment->setPaciente($this->patientRepository->find($dto->pacienteId));
+            $patient = $this->patientRepository->find($dto->pacienteId);
+            if ($patient === null) {
+                throw new \InvalidArgumentException('Patient not found.');
+            }
+            $appointment->setPaciente($patient);
         }
         if (property_exists($dto, 'odontologoId') && $dto->odontologoId !== null) {
-            $appointment->setOdontologo($this->dentistRepository->find($dto->odontologoId));
+            $dentist = $this->dentistRepository->find($dto->odontologoId);
+            if ($dentist === null) {
+                throw new \InvalidArgumentException('Dentist not found.');
+            }
+            $appointment->setOdontologo($dentist);
         }
         if (property_exists($dto, 'boxId') && $dto->boxId !== null) {
-            $appointment->setBox($this->boxRepository->find($dto->boxId));
+            $box = $this->boxRepository->find($dto->boxId);
+            if ($box === null) {
+                throw new \InvalidArgumentException('Box not found.');
+            }
+            $appointment->setBox($box);
         }
         if (property_exists($dto, 'fecha') && $dto->fecha !== null) {
             $appointment->setFecha(new \DateTime($dto->fecha));
@@ -122,8 +134,9 @@ class AppointmentMapper
         $dto->appointment_kind = $appointment->getAppointmentKind();
         $dto->catalog_treatment_id = $appointment->getCatalogTreatment()?->getId();
         $dto->catalog_treatment_name = $appointment->getCatalogTreatment()?->getName();
+        $dto->treatment_category_name = $appointment->getCatalogTreatment()?->getCategory()?->getName();
         $dto->specialty_name = $appointment->getCatalogTreatment()?->getDentistSpecialty()?->getName();
-        $dto->treatment = $appointment->getTreatment();
+        $dto->treatment = $appointment->getTreatment() ?? $dto->catalog_treatment_name;
         $dto->isInfectious = $appointment->getIsInfectious();
         $dto->notes = $appointment->getNotes();
 

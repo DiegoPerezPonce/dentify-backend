@@ -19,6 +19,18 @@ class AppointmentRepository extends ServiceEntityRepository
         parent::__construct($registry, Appointment::class);
     }
 
+    public function findOneForSession(int $id): ?Appointment
+    {
+        return $this->createQueryBuilder('a')
+            ->addSelect('p', 'ct')
+            ->innerJoin('a.paciente', 'p')
+            ->leftJoin('a.catalogTreatment', 'ct')
+            ->andWhere('a.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     /**
      * Finds appointments that overlap with the given time range for a specific dentist or box.
      *
