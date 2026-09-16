@@ -1,5 +1,8 @@
 # Dentify - Backend API
 
+<img width="2713" height="396" alt="logo1" src="https://github.com/user-attachments/assets/80bdd008-c179-4817-a15d-942c5756a2b6" />
+
+
 [![Symfony](https://img.shields.io/badge/Symfony-000000?style=for-the-badge\&logo=symfony\&logoColor=white)](https://symfony.com/)
 [![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge\&logo=php\&logoColor=white)](https://www.php.net/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
